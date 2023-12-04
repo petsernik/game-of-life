@@ -11,6 +11,7 @@ class CellStorage:
     pause = True
     point_mode = True
     erase_mode = False
+    grid_mode = False
     frames = [{}]
     frame = 0
     dict_cell = {}
@@ -45,10 +46,44 @@ class CellStorage:
             (1, 0),
             (-1, -1), (0, -1), (1, -1)
         ],
+        [
+            (0, 1),
+            (-1, 0), (0, 0), (1, 0),
+            (-1, -1), (1, -1)
+        ],
         [(i, j) for i in range(-1, 2) for j in range(-1, 2)],
         []
     ]
     screen = None
+    grid = None
+    running_screen = 1
+
+    @staticmethod
+    def update_grid(s2 = False):
+        size = CellStorage.screen.get_size()
+
+        CellStorage.grid = pygame.Surface(size)
+        CellStorage.grid.set_alpha(40)
+        CellStorage.grid.fill((255, 255, 255))
+
+        a, b = size
+        cs_size = CellStorage.size if not s2 else CellStorage.size2
+        cs_x, cs_y = (CellStorage.x, CellStorage.y) if not s2 else (CellStorage.x2, CellStorage.y2)
+
+        start_x = cs_x % cs_size - cs_size
+        start_y = cs_y % cs_size - cs_size
+
+        for i in range(int(a / cs_size) + 1):
+            pygame.draw.aaline(CellStorage.grid,
+                               CellStorage.colors['black'],
+                               [start_x + i * cs_size, 0],
+                               [start_x + i * cs_size, b])
+
+        for j in range(int(b / cs_size) + 1):
+            pygame.draw.aaline(CellStorage.grid,
+                               CellStorage.colors['black'],
+                               [0, start_y + j * cs_size],
+                               [a, start_y + j * cs_size])
 
     @staticmethod
     def rotate(figure=None):
@@ -76,18 +111,14 @@ class CellStorage:
 
     @staticmethod
     def s_draw(i, j, color, s2=False):
-        if not s2:
-            x, y = CellStorage.x + i * CellStorage.size, CellStorage.y - j * CellStorage.size
-            a, b = CellStorage.screen.get_size()
-            if -CellStorage.size <= x <= a and -CellStorage.size <= y <= b:
-                pygame.draw.rect(CellStorage.screen, color,
-                                 (x, y, CellStorage.size, CellStorage.size))
-        else:
-            x, y = CellStorage.x2 + i * CellStorage.size2, CellStorage.y2 - j * CellStorage.size2
-            a, b = CellStorage.screen.get_size()
-            if -CellStorage.size2 <= x <= a and -CellStorage.size2 <= y <= b:
-                pygame.draw.rect(CellStorage.screen, color,
-                                 (x, y, CellStorage.size2, CellStorage.size2))
+        cs_size = CellStorage.size if not s2 else CellStorage.size2
+        cs_x, cs_y = (CellStorage.x, CellStorage.y) if not s2 else (CellStorage.x2, CellStorage.y2)
+
+        x, y = cs_x + i * cs_size, cs_y - j * cs_size
+        a, b = CellStorage.screen.get_size()
+        if -cs_size <= x <= a and -cs_size <= y <= b:
+            pygame.draw.rect(CellStorage.screen, color,
+                             (x, y, cs_size, cs_size))
 
     @staticmethod
     def draw_pale(i, j):
@@ -97,6 +128,11 @@ class CellStorage:
         else:
             for x, y in CellStorage.figure:
                 CellStorage.s_draw(x + i, y + j, CellStorage.color_name)
+
+    @staticmethod
+    def draw_grid(s2 = False):
+        CellStorage.update_grid(s2)
+        CellStorage.screen.blit(CellStorage.grid, (0, 0))
 
     @staticmethod
     def set_color(color):

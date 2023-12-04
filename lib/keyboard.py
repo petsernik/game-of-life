@@ -18,11 +18,10 @@ class KeyboardKey:
         self.is_pressed = False
         self.hold = False
 
-    def get_hold(self, _time=0.2):
-        if self.is_pressed:
-            if not self.hold:
-                self.hold = time() - self.seconds >= _time
-            return self.hold
+    def is_holding(self, _time=0.2):
+        if self.is_pressed and not self.hold:
+            self.hold = time() - self.seconds >= _time
+        return self.hold
 
     @staticmethod
     def all_keys():
@@ -38,7 +37,7 @@ def update_key(event, keyboard):
         key = get_keyboard_key(event)
         if key in keyboard:
             keyboard[key].down()
-    if event.type == pygame.KEYUP:
+    elif event.type == pygame.KEYUP:
         key = get_keyboard_key(event)
         if key in keyboard:
             keyboard[key].up()

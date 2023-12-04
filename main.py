@@ -37,6 +37,7 @@ def main():
     width, height = monitor.width, monitor.height
     screen = pygame.display.set_mode((width, height), pygame.FULLSCREEN)
     CellStorage.screen = screen
+    CellStorage.update_grid()
     resource_path = 'resources'
 
     class SaveBox(Button):
@@ -268,6 +269,8 @@ def main():
                             CellStorage.set_point()
                         else:
                             CellStorage.set_figure()
+                    elif key == 'g':
+                        CellStorage.grid_mode = not CellStorage.grid_mode
                     elif key == 'space':
                         play_box.action(as_btn=False)
                     elif key == 'left':
@@ -386,11 +389,11 @@ def main():
             hide_buttons()
 
             if time() - t >= dt:
-                if keyboard['v'].get_hold():
+                if keyboard['v'].is_holding():
                     CellStorage.left_frame()
                     CellStorage.pause = True
                     t = time()
-                if keyboard['b'].get_hold():
+                if keyboard['b'].is_holding():
                     CellStorage.right_frame()
                     CellStorage.pause = True
                     t = time()
@@ -403,8 +406,12 @@ def main():
             if not CellStorage.point_mode:
                 i, j = CellStorage.mouse_cell_coord()
                 CellStorage.draw_pale(i, j)
+
             for cell in CellStorage.values():
                 cell.draw()
+
+            if CellStorage.grid_mode:
+                CellStorage.draw_grid()
 
             save.dis_light()
             eraser.set_color("red") if CellStorage.erase_mode else eraser.set_color("black")
@@ -415,7 +422,7 @@ def main():
                 blit_text(screen, f' {int(1 / dt) if 1 / dt == int(1 / dt) else 1 / dt} FPS',
                           (play_box.pos()[0] + play_box.width(), play_box.pos()[1] + play_box.height() // 4),
                           pygame.font.SysFont('Courier New', 20))
-            pygame.display.flip()
+            pygame.display.update()
         if running_screen == 2:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -429,6 +436,8 @@ def main():
                         colors = list(CellStorage.colors.keys())
                         CellStorage.set_color(colors[int(key) - 1])
                         fake_drawing = False
+                    elif key == 'g':
+                        CellStorage.grid_mode = not CellStorage.grid_mode
                     elif key == '0':
                         CellStorage.set_color('fake')
                         fake_drawing = True
@@ -495,6 +504,8 @@ def main():
             save.dis_light()
             for btn in buttons2:
                 btn.blit()
+            if CellStorage.grid_mode:
+                CellStorage.draw_grid(True)
             pygame.display.flip()
         if running_screen == 3:
             for event in pygame.event.get():
