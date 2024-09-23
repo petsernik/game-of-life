@@ -2,13 +2,13 @@ import pygame
 import os
 import sys
 import ast
-from win32api import GetSystemMetrics
 from time import time
 from pathlib import Path
 
 from lib.cell import CellStorage, Cell
 from lib.keyboard import KeyboardKey, update_key, get_keyboard_key
 from lib.rect import fill, Button, Text, blit_text
+from lib.systemMetrics import get_system_metrics
 
 
 def get_path(relative):
@@ -33,7 +33,7 @@ def get_img(str_path, k=None, size=None, color=None):
 
 def main():
     pygame.init()
-    display_size = (GetSystemMetrics(0), GetSystemMetrics(1))
+    display_size = (get_system_metrics())
     screen = pygame.display.set_mode(display_size, pygame.FULLSCREEN)
     CellStorage.screen = screen
     CellStorage.update_grid()

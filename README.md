@@ -1,5 +1,5 @@
 # Conway's Game of Life
-Windows implementation of this game in Python in which you can
+Cross-platform implementation of this game in Python in which you can
 * create and run any game configuration
 * move around the field
 * start/pause the game
@@ -35,18 +35,26 @@ Windows implementation of this game in Python in which you can
 | H | change the hiding mode of icons (in the field) |  
 | ESC | exit the current window (in the field: exit the application) |
 ### Notes
-This implementation is only for Windows, but it doesn’t seem to take much time to adapt to other platforms. 
+Windows or macOS: you can download the executable file from Releases.
 
-You can download the EXE file from Releases or run main.py after installing the necessary libraries by this command:
+All platforms:  
+Install the necessary libraries by this command:
 ```bash
-pip install pygame; pip install pypiwin32
+pip3 install pygame
 ```
-I used pyinstaller to create the EXE file by main.spec and following commands:
+Only for Windows you also need:
 ```bash
-pip install pyinstaller
+pip3 install pypiwin32
+```
+After this you can run main.py.
+
+Also you can create the executable file by following commands:
+```bash
+pip3 install pyinstaller==4.10
 ```
 ```bash
-pyinstaller -F main.spec
+python3 -m PyInstaller -F main.spec
 ```
 
-Also just saying that the \_\_parameters\_\_ file is a save file, it is created and then overwritten every time you save.
+
+Just saying that the \_\_parameters\_\_ file is a save file, it is created and then overwritten every time you save.
