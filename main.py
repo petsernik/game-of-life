@@ -6,7 +6,7 @@ from screeninfo import get_monitors
 from time import time
 from pathlib import Path
 
-from lib.cell import CellStorage, Cell
+from lib.cell import CellStorage, Cell, prepare_color
 from lib.keyboard import KeyboardKey, update_key, get_keyboard_key
 from lib.rect import fill, Button, Text, blit_text
 
@@ -77,7 +77,7 @@ def main():
                         _colors = ast.literal_eval(f.readline())
                         CellStorage.clear()
                         for _i in range(len(cords)):
-                            Cell(cords[_i][0], cords[_i][1], _colors[_i])
+                            Cell(cords[_i][0], cords[_i][1], prepare_color(_colors[_i]))
                         _x, _y, z = int(f.readline()), ast.literal_eval(f.readline()), float(f.readline())
                         if full:
                             nonlocal dt
@@ -235,7 +235,7 @@ def main():
     play_box.set_action(__upd_pause)
 
     while running:
-        screen.fill((255, 255, 255))
+        screen.fill(CellStorage.colors["white"])
         if running_screen == 1:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
@@ -253,6 +253,8 @@ def main():
                         fake_drawing = True
                     elif key == 'r':
                         CellStorage.rotate()
+                    elif key == 't':
+                        CellStorage.update_transparency_mode()
                     elif key == 'i':
                         s2_inv.action(as_btn=False)
                     elif key == 'h':
@@ -496,7 +498,7 @@ def main():
                 btn.action()
             if running_screen != 2:
                 continue
-            CellStorage.s_draw(0, 0, (222, 222, 222), s2=True)
+            CellStorage.s_draw(0, 0, CellStorage.colors["gray"], s2=True)
             CellStorage.draw_figure(s2=True)
             to_s1_text.blit()
             s2_inv.set_color("red")

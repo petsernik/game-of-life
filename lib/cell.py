@@ -3,6 +3,33 @@ import math
 import pygame
 
 
+def prepare_color(color):
+    if len(color) == 4:
+        return color
+    return color[0], color[1], color[2], 255
+
+
+def draw_rect_alpha(surface, color, rect):
+    shape_surf = pygame.Surface(pygame.Rect(rect).size, pygame.SRCALPHA)
+    pygame.draw.rect(shape_surf, color, shape_surf.get_rect())
+    surface.blit(shape_surf, rect)
+
+
+def colorless(color):
+    return color[0], color[1], color[2], color[3] // 3
+
+
+def color_set_alpha(color, alpha):
+    return color[0], color[1], color[2], alpha
+
+
+def update_mode(mode, cur_mode, number_of_modes):
+    if mode is None:
+        return cur_mode + 1 if cur_mode + 1 < number_of_modes else 0
+    else:
+        return mode
+
+
 class CellStorage:
     x, y = 0, 0
     x2, y2 = 0, 0
@@ -12,24 +39,29 @@ class CellStorage:
     point_mode = True
     erase_mode = False
     grid_mode = False
+    transparency_init, transparency_max = 0, 1
+    transparency_mode = transparency_init
+    number_of_transparency_modes = 2
     frames = [{}]
     frame = 0
     dict_cell = {}
     new_cells = {}
     del_cells = {}
     colors = {
-        "red": (230, 0, 0),
-        "green": (0, 200, 0),
-        "blue": (0, 0, 200),
-        "yellow": (255, 255, 0),
-        "black": (0, 0, 0),
-        "fake": (190, 190, 190),
-        "pale red": (255, 180, 180),
-        "pale green": (152, 251, 152),
-        "pale blue": (175, 238, 238),
-        "pale yellow": (255, 255, 102),
-        "pale black": (181, 184, 177),
-        "pale fake": (225, 225, 225),
+        "red": (230, 0, 0, 255),
+        "green": (0, 200, 0, 255),
+        "blue": (0, 0, 200, 255),
+        "yellow": (255, 255, 0, 255),
+        "black": (0, 0, 0, 255),
+        "fake": (190, 190, 190, 255),
+        "pale red": (255, 180, 180, 255),
+        "pale green": (152, 251, 152, 255),
+        "pale blue": (175, 238, 238, 255),
+        "pale yellow": (255, 255, 102, 255),
+        "pale black": (181, 184, 177, 255),
+        "pale fake": (225, 225, 225, 255),
+        "gray": (222, 222, 222, 255),
+        "white": (255, 255, 255, 255),
     }
     color_name = "red"
     neigh = [
@@ -59,7 +91,12 @@ class CellStorage:
     running_screen = 1
 
     @staticmethod
-    def update_grid(s2 = False):
+    def update_transparency_mode(mode=None):
+        CellStorage.transparency_mode = \
+            update_mode(mode, CellStorage.transparency_mode, CellStorage.number_of_transparency_modes)
+
+    @staticmethod
+    def update_grid(s2=False):
         size = CellStorage.screen.get_size()
 
         CellStorage.grid = pygame.Surface(size)
@@ -110,15 +147,20 @@ class CellStorage:
             CellStorage.dict_cell = CellStorage.frames[CellStorage.frame]
 
     @staticmethod
-    def s_draw(i, j, color, s2=False):
+    def s_draw(i, j, color, s2=False, ignore_t_mode=False):
         cs_size = CellStorage.size if not s2 else CellStorage.size2
         cs_x, cs_y = (CellStorage.x, CellStorage.y) if not s2 else (CellStorage.x2, CellStorage.y2)
 
         x, y = cs_x + i * cs_size, cs_y - j * cs_size
         a, b = CellStorage.screen.get_size()
         if -cs_size <= x <= a and -cs_size <= y <= b:
-            pygame.draw.rect(CellStorage.screen, color,
-                             (x, y, cs_size, cs_size))
+            draw_rect_alpha(CellStorage.screen,
+                            color_set_alpha(
+                                color,
+                                255 if CellStorage.transparency_mode == CellStorage.transparency_max and
+                                       not ignore_t_mode else color[3]
+                            ),
+                            (x, y, cs_size, cs_size))
 
     @staticmethod
     def draw_pale(i, j):
@@ -130,7 +172,7 @@ class CellStorage:
                 CellStorage.s_draw(x + i, y + j, CellStorage.color_name)
 
     @staticmethod
-    def draw_grid(s2 = False):
+    def draw_grid(s2=False):
         CellStorage.update_grid(s2)
         CellStorage.screen.blit(CellStorage.grid, (0, 0))
 
@@ -160,14 +202,15 @@ class CellStorage:
         for p in CellStorage.neigh:
             if (i + p[0], j + p[1]) in CellStorage.dict_cell:
                 lst.append(CellStorage.dict_cell[(i + p[0], j + p[1])])
-        r, g, b = 0, 0, 0
+        r, g, b, a = 0, 0, 0, 0
         for cell in lst:
             r += cell.color[0] ** 2
             g += cell.color[1] ** 2
             b += cell.color[2] ** 2
+            a += cell.color[3] ** 2
         if len(lst):
-            r, g, b = map(lambda x: math.ceil((x // len(lst)) ** 0.5), [r, g, b])
-        return r, g, b
+            r, g, b, a = map(lambda x: math.ceil((x // len(lst)) ** 0.5), [r, g, b, a])
+        return r, g, b, a
 
     @staticmethod
     def new_stage():
@@ -204,6 +247,10 @@ class CellStorage:
         else:
             if 1 <= CellStorage.size2 * k <= 64:
                 CellStorage.size2 *= k
+
+    @staticmethod
+    def cut():
+        CellStorage.frames = CellStorage.frames[:CellStorage.frame + 1]
 
     @staticmethod
     def create(i, j):
