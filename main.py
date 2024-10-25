@@ -5,7 +5,7 @@ import ast
 from time import time
 from pathlib import Path
 
-from lib.cell import CellStorage, Cell
+from lib.cell import CellStorage, Cell, color_alpha
 from lib.keyboard import KeyboardKey, update_key, get_keyboard_key
 from lib.rect import fill, Button, Text, blit_text
 from lib.systemMetrics import get_system_metrics
@@ -76,7 +76,7 @@ def main():
                         _colors = ast.literal_eval(f.readline())
                         CellStorage.clear()
                         for _i in range(len(cords)):
-                            Cell(cords[_i][0], cords[_i][1], _colors[_i])
+                            Cell(cords[_i][0], cords[_i][1], color_alpha(_colors[_i]))
                         _x, _y, z = int(f.readline()), ast.literal_eval(f.readline()), float(f.readline())
                         if full:
                             nonlocal dt
@@ -251,6 +251,8 @@ def main():
                         false_drawing = True
                     elif key == 'r':
                         CellStorage.rotate()
+                    elif key == 't':
+                        CellStorage.update_transparency_mode()
                     elif key == 'i':
                         s2_inv.action(as_btn=False)
                     elif key == 'h':
