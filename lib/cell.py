@@ -35,6 +35,7 @@ class CellStorage:
     x2, y2 = 0, 0
     size = 64
     size2 = 64
+    extra = 2**20
     pause = True
     point_mode, figure_mode, art_mode = 0, 1, 2
     draw_mode = point_mode
@@ -114,30 +115,28 @@ class CellStorage:
 
     @staticmethod
     def update_grid(s2=False):
-        size = CellStorage.screen.get_size()
+        cs_size = CellStorage.size2 if s2 else CellStorage.size
 
-        CellStorage.grid = pygame.Surface(size)
+        a, b = CellStorage.screen.get_size()
+        a += cs_size
+        b += cs_size
+
+        CellStorage.grid = pygame.Surface((a,b))
         CellStorage.grid.set_alpha(40)
         CellStorage.grid.fill((255, 255, 255))
 
-        a, b = size
-        cs_size = CellStorage.size if not s2 else CellStorage.size2
-        cs_x, cs_y = (CellStorage.x, CellStorage.y) if not s2 else (CellStorage.x2, CellStorage.y2)
-
-        start_x = cs_x % cs_size - cs_size
-        start_y = cs_y % cs_size - cs_size
 
         for i in range(int(a / cs_size) + 1):
             pygame.draw.aaline(CellStorage.grid,
                                CellStorage.colors['black'],
-                               [start_x + i * cs_size, 0],
-                               [start_x + i * cs_size, b])
+                               [i * cs_size, 0],
+                               [i * cs_size, b])
 
         for j in range(int(b / cs_size) + 1):
             pygame.draw.aaline(CellStorage.grid,
                                CellStorage.colors['black'],
-                               [0, start_y + j * cs_size],
-                               [a, start_y + j * cs_size])
+                               [0, j * cs_size],
+                               [a, j * cs_size])
 
     @staticmethod
     def update_collection_by_figure(fig = None):
@@ -199,8 +198,10 @@ class CellStorage:
 
     @staticmethod
     def draw_grid(s2=False):
-        CellStorage.update_grid(s2)
-        CellStorage.screen.blit(CellStorage.grid, (0, 0))
+        cs_size = CellStorage.size2 if s2 else CellStorage.size
+        cs_x, cs_y = (CellStorage.x2, CellStorage.y2) if s2 else (CellStorage.x, CellStorage.y)
+
+        CellStorage.screen.blit(CellStorage.grid, (cs_x % cs_size - cs_size, cs_y % cs_size - cs_size))
 
     @staticmethod
     def set_color(color):
@@ -239,19 +240,34 @@ class CellStorage:
         return r, g, b, a
 
     @staticmethod
+    def step_stage():
+        for cell in CellStorage.dict_cell.values():
+            cell.update()
+        for cell in CellStorage.del_cells:
+            CellStorage.delitem(cell)
+        for cell, color in CellStorage.new_cells.items():
+            Cell(cell[0], cell[1], color)
+        CellStorage.del_cells, CellStorage.new_cells = {}, {}
+
+    @staticmethod
+    def extra_stage():
+        if len(CellStorage.frames) < CellStorage.frame + CellStorage.extra:
+            if CellStorage.frame == len(CellStorage.frames) - 1:
+                CellStorage.frames[CellStorage.frame] = CellStorage.dict_cell.copy()
+            else:
+                CellStorage.dict_cell = CellStorage.frames[-1]
+            CellStorage.step_stage()
+            CellStorage.frames.append(CellStorage.dict_cell.copy())
+            CellStorage.dict_cell = CellStorage.frames[CellStorage.frame]
+
+    @staticmethod
     def new_stage():
         if CellStorage.frame != len(CellStorage.frames) - 1:
             CellStorage.frame += 1
             CellStorage.dict_cell = CellStorage.frames[CellStorage.frame]
         else:
             CellStorage.frames[CellStorage.frame] = CellStorage.dict_cell.copy()
-            for cell in CellStorage.dict_cell.values():
-                cell.update()
-            for cell in CellStorage.del_cells:
-                CellStorage.delitem(cell)
-            for cell, color in CellStorage.new_cells.items():
-                Cell(cell[0], cell[1], color)
-            CellStorage.del_cells, CellStorage.new_cells = {}, {}
+            CellStorage.step_stage()
             CellStorage.frame += 1
             CellStorage.frames.append(CellStorage.dict_cell.copy())
 
@@ -273,6 +289,8 @@ class CellStorage:
         else:
             if 1 <= CellStorage.size2 * k <= 64:
                 CellStorage.size2 *= k
+
+        CellStorage.update_grid(s2)
 
     @staticmethod
     def cut():

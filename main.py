@@ -187,6 +187,9 @@ def main():
     keyboard = dict([(key, KeyboardKey()) for key in KeyboardKey.all_keys()])
     hidden_mode = 0
 
+    t_extra, dt_extra = time(), 1 / 2
+    slow_mode = False
+
     __len__icon__ = min(50 * width // 1920, 50 * height // 1080)
     __size__icon__ = (__len__icon__, __len__icon__)
     s2_left = Button(get_img(get_building_path(f'{resource_path}/left.png'), size=(lambda xy: (2 * xy[0], 2 * xy[1]))(__size__icon__)))
@@ -234,7 +237,9 @@ def main():
     save.upd_by_file()
     play_box = Button(get_img(get_building_path(f'{resource_path}/play.png'), size=__size__icon__))
     play_box.upd_pos(10, __right_height)
-    buttons1 = [s2_inv, eraser, s3_info, save, play_box]
+    slow_switch = Button(get_img(get_building_path(f'{resource_path}/turtle.png'), size=__size__icon__))
+    slow_switch.upd_pos(10, play_box.pos()[1] + play_box.height())
+    buttons1 = [s2_inv, eraser, s3_info, save, play_box, slow_switch]
     buttons2 = [s2_left, s2_right, s2_inv, eraser, s3_info, save]
     buttons3 = [s2_inv, eraser, s3_info, save]
     s2_left.set_action(CellStorage.set_prev_figure)
@@ -249,8 +254,15 @@ def main():
     def __upd_erase_mode():
         CellStorage.erase_mode = not CellStorage.erase_mode
 
+    def __upd_slow_mode():
+        nonlocal slow_mode
+        slow_mode = not slow_mode
+
     eraser.set_action(__upd_erase_mode)
     play_box.set_action(__upd_pause)
+    slow_switch.set_action(__upd_slow_mode)
+
+    slow_switch.set_color('red')
 
     for root, dirs, files in os.walk(gallery_path):
         for file in files:
@@ -265,10 +277,14 @@ def main():
 
     CellStorage.upd_figures()
     CellStorage.upd_arts()
+    CellStorage.update_grid()
+
     while running:
         screen.fill(CellStorage.colors["white"])
         if running_screen == 1:
+            no_event = True
             for event in pygame.event.get():
+                no_event = False
                 if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                     running = False
 
@@ -282,6 +298,8 @@ def main():
                     elif key == '0':
                         CellStorage.set_color('fake')
                         fake_drawing = True
+                    elif key == 'w':
+                        slow_mode = not slow_mode
                     elif key == 'r':
                         CellStorage.rotate()
                     elif key == 't':
@@ -403,17 +421,24 @@ def main():
                 if keyboard['v'].is_holding():
                     CellStorage.left_frame()
                     CellStorage.pause = True
-                    t = time()
+                    no_event = False
+
                 if keyboard['b'].is_holding():
                     CellStorage.right_frame()
                     CellStorage.pause = True
-                    t = time()
+                    no_event = False
+
                 if not CellStorage.pause:
                     CellStorage.new_stage()
-                    t = time()
 
-            for cell in fake_cells.keys():
-                CellStorage.s_draw(cell[0], cell[1], CellStorage.colors["fake"])
+                t = time()
+
+            if slow_mode or time() - t_extra >= dt:
+                if slow_mode or (no_event and CellStorage.pause):
+                    CellStorage.extra_stage()
+                else:
+                    t_extra = time()
+
             for cell in fake_cells.keys():
                 CellStorage.s_draw(cell[0], cell[1], CellStorage.colors["fake"])
 
@@ -429,6 +454,7 @@ def main():
             save.dis_light()
             eraser.set_color("red") if CellStorage.erase_mode else eraser.set_color("black")
             play_box.set_color("black") if CellStorage.pause else play_box.set_color("red")
+            slow_switch.hidden = False if slow_mode else True
             for btn in buttons1:
                 btn.blit()
             if hidden_mode == 0:
