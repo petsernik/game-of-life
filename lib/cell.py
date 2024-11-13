@@ -36,7 +36,9 @@ class CellStorage:
     size = 64
     size2 = 64
     pause = True
-    point_mode = True
+    point_mode, figure_mode, art_mode = 0, 1, 2
+    draw_mode = point_mode
+    number_of_draw_modes = 3
     erase_mode = False
     grid_mode = False
     transparency_init, transparency_max = 0, 1
@@ -54,12 +56,6 @@ class CellStorage:
         "yellow": (255, 255, 0, 255),
         "black": (0, 0, 0, 255),
         "fake": (190, 190, 190, 255),
-        "pale red": (255, 180, 180, 255),
-        "pale green": (152, 251, 152, 255),
-        "pale blue": (175, 238, 238, 255),
-        "pale yellow": (255, 255, 102, 255),
-        "pale black": (181, 184, 177, 255),
-        "pale fake": (225, 225, 225, 255),
         "gray": (222, 222, 222, 255),
         "white": (255, 255, 255, 255),
     }
@@ -69,23 +65,25 @@ class CellStorage:
         (0, -1), (0, 1),
         (1, -1), (1, 0), (1, 1)
     ]
-    point = [(0, 0)]
-    figure = [(0, 0)]
+    point = [(0, 0, None)]
+    figure = point
     pattern_index = 0
     patterns = [
         [
-            (0, 1),
-            (1, 0),
-            (-1, -1), (0, -1), (1, -1)
+            (0, 1, None),
+            (1, 0, None),
+            (-1, -1, None), (0, -1, None), (1, -1, None)
         ],
         [
-            (0, 1),
-            (-1, 0), (0, 0), (1, 0),
-            (-1, -1), (1, -1)
+            (0, 1, None),
+            (-1, 0, None), (0, 0, None), (1, 0, None),
+            (-1, -1, None), (1, -1, None)
         ],
-        [(i, j) for i in range(-1, 2) for j in range(-1, 2)],
+        [(i, j, None) for i in range(-1, 2) for j in range(-1, 2)],
         []
     ]
+    art_index = 0
+    arts = [[]]
     screen = None
     grid = None
     running_screen = 1
@@ -94,6 +92,25 @@ class CellStorage:
     def update_transparency_mode(mode=None):
         CellStorage.transparency_mode = \
             update_mode(mode, CellStorage.transparency_mode, CellStorage.number_of_transparency_modes)
+
+    @staticmethod
+    def update_draw_mode(mode=None):
+        CellStorage.draw_mode = update_mode(mode, CellStorage.draw_mode, CellStorage.number_of_draw_modes)
+        if (
+                mode is None
+                and
+                (CellStorage.draw_mode == CellStorage.figure_mode and CellStorage.patterns[0] == []
+                 or
+                 CellStorage.draw_mode == CellStorage.art_mode and CellStorage.arts[0] == [])
+        ):
+            CellStorage.update_draw_mode()
+            return
+        if CellStorage.draw_mode == CellStorage.point_mode:
+            CellStorage.figure = CellStorage.point
+        elif CellStorage.draw_mode == CellStorage.figure_mode:
+            CellStorage.figure = CellStorage.patterns[CellStorage.pattern_index]
+        elif CellStorage.draw_mode == CellStorage.art_mode:
+            CellStorage.figure = CellStorage.arts[CellStorage.art_index]
 
     @staticmethod
     def update_grid(s2=False):
@@ -123,14 +140,19 @@ class CellStorage:
                                [a, start_y + j * cs_size])
 
     @staticmethod
-    def rotate(figure=None):
-        if figure is None:
-            x = CellStorage.patterns[CellStorage.pattern_index]
-            x = [(j, -i) for i, j in x]
-            CellStorage.patterns[CellStorage.pattern_index] = x
-            CellStorage.figure = x
-        else:
-            return [(j, -i) for i, j in figure]
+    def update_collection_by_figure(fig = None):
+        if fig is None:
+            fig = CellStorage.figure
+        if CellStorage.draw_mode == CellStorage.figure_mode:
+            CellStorage.patterns[CellStorage.pattern_index] = fig
+        elif CellStorage.draw_mode == CellStorage.art_mode:
+            CellStorage.arts[CellStorage.art_index] = fig
+
+
+    @staticmethod
+    def rotate():
+        CellStorage.figure = [(j, -i, c) for i, j, c in CellStorage.figure]
+        CellStorage.update_collection_by_figure()
 
     @staticmethod
     def left_frame():
@@ -147,7 +169,10 @@ class CellStorage:
             CellStorage.dict_cell = CellStorage.frames[CellStorage.frame]
 
     @staticmethod
-    def s_draw(i, j, color, s2=False, ignore_t_mode=False):
+    def s_draw(i, j, color=None, s2=False, ignore_t_mode=False):
+        if color is None:
+            color = CellStorage.colors[CellStorage.color_name]
+
         cs_size = CellStorage.size if not s2 else CellStorage.size2
         cs_x, cs_y = (CellStorage.x, CellStorage.y) if not s2 else (CellStorage.x2, CellStorage.y2)
 
@@ -164,12 +189,13 @@ class CellStorage:
 
     @staticmethod
     def draw_pale(i, j):
-        if "pale " + CellStorage.color_name in CellStorage.colors:
-            for x, y in CellStorage.figure:
-                CellStorage.s_draw(x + i, y + j, CellStorage.colors["pale " + CellStorage.color_name])
-        else:
-            for x, y in CellStorage.figure:
-                CellStorage.s_draw(x + i, y + j, CellStorage.color_name)
+        if CellStorage.draw_mode == CellStorage.figure_mode:
+            for x, y, color in CellStorage.figure:
+                CellStorage.s_draw(x + i, y + j, colorless(CellStorage.colors[CellStorage.color_name]),
+                                   ignore_t_mode=True)
+        elif CellStorage.draw_mode == CellStorage.art_mode:
+            for x, y, color in CellStorage.arts[CellStorage.art_index]:
+                CellStorage.s_draw(x + i, y + j, colorless(color), ignore_t_mode=True)
 
     @staticmethod
     def draw_grid(s2=False):
@@ -254,24 +280,40 @@ class CellStorage:
 
     @staticmethod
     def create(i, j):
-        for x, y in CellStorage.figure:
-            Cell(x + i, y + j)
-        CellStorage.frames = CellStorage.frames[:CellStorage.frame + 1]
+        for x, y, color in CellStorage.figure:
+            Cell(x + i, y + j, color)
+        CellStorage.cut()
+
+    @staticmethod
+    def fake_create(i, j, fake_cells):
+        for x, y, color in CellStorage.figure:
+            fake_cells[(x + i, y + j)] = 1
 
     @staticmethod
     def create_with_del(i, j):
-        for x, y in CellStorage.figure:
-            if (x + i, y + j) in CellStorage.dict_cell:
-                CellStorage.delitem(x + i, y + j)
-            else:
-                Cell(x + i, y + j)
-        CellStorage.frames = CellStorage.frames[:CellStorage.frame + 1]
+        if (i, j) in CellStorage.dict_cell:
+            CellStorage.delitem(i, j)
+        else:
+            Cell(i, j)
+        CellStorage.cut()
+
+    @staticmethod
+    def fake_create_with_del(i, j, fake_cells):
+        if (i, j) in fake_cells:
+            fake_cells.pop((i, j))
+        else:
+            fake_cells[(i, j)] = 1
 
     @staticmethod
     def del_by_figure(i, j):
-        for x, y in CellStorage.figure:
+        for x, y, color in CellStorage.figure:
             CellStorage.delitem(x + i, y + j)
-        CellStorage.frames = CellStorage.frames[:CellStorage.frame + 1]
+        CellStorage.cut()
+
+    @staticmethod
+    def fake_del_by_figure(i, j, fake_cells):
+        for x, y, color in CellStorage.figure:
+            fake_cells.pop((x + i, y + j), None)
 
     @staticmethod
     def delitem(key, j=None):
@@ -309,65 +351,71 @@ class CellStorage:
         CellStorage.frames = CellStorage.frames[:CellStorage.frame + 1]
 
     @staticmethod
-    def set_point():
-        CellStorage.figure = CellStorage.point
-
-    @staticmethod
-    def set_figure(i=None, f=None):
-        if i is None:
+    def set_prev_figure(s2=False):
+        if CellStorage.draw_mode == CellStorage.figure_mode or s2:
+            CellStorage.pattern_index = max(CellStorage.pattern_index - 1, 0)
             CellStorage.figure = CellStorage.patterns[CellStorage.pattern_index]
-        elif f is None:
-            if isinstance(i, list):
-                CellStorage.figure = i
-            if isinstance(i, int):
-                CellStorage.figure = CellStorage.patterns[i]
+        elif CellStorage.draw_mode == CellStorage.art_mode:
+            CellStorage.art_index = max(CellStorage.art_index - 1, 0)
+            CellStorage.figure = CellStorage.arts[CellStorage.art_index]
+
+    @staticmethod
+    def set_next_figure(empty_allow=False, s2=False):
+        if CellStorage.draw_mode == CellStorage.figure_mode or s2:
+            index = CellStorage.pattern_index
+            collection = CellStorage.patterns
+        elif CellStorage.draw_mode == CellStorage.art_mode:
+            index = CellStorage.art_index
+            collection = CellStorage.arts
         else:
-            CellStorage.patterns[i] = f
+            return
+
+        if index == len(collection) - 1 and len(collection[index]) > 0:
+            collection.append([])
+        index = min(index + 1, len(collection) - 1)
+        if not empty_allow and len(collection[index]) == 0 and index > 0:
+            index -= 1
+
+        if CellStorage.draw_mode == CellStorage.figure_mode or s2:
+            CellStorage.pattern_index = index
+            CellStorage.figure = CellStorage.patterns[index]
+        elif CellStorage.draw_mode == CellStorage.art_mode:
+            CellStorage.art_index = index
+            CellStorage.figure = CellStorage.arts[CellStorage.art_index]
 
     @staticmethod
-    def set_prev_figure():
-        CellStorage.pattern_index = max(CellStorage.pattern_index - 1, 0)
-        if not CellStorage.point_mode:
-            CellStorage.figure = CellStorage.patterns[CellStorage.pattern_index]
+    def art_by_png(img):
+        art = []
+        w, h = img.get_width(), img.get_height()
+        colors = [[img.get_at((i, j)) for j in range(h)] for i in range(w)]
+        for i in range(w):
+            for j in range(h):
+                if colors[i][j][3]:
+                    art.append((i - (w >> 1), (h >> 1) - j, colors[i][j]))
+        return art
 
     @staticmethod
-    def set_next_figure(empty_allow=True):
-        fi = CellStorage.pattern_index
-        fs = CellStorage.patterns
-        if fi == len(fs) - 1 and len(fs[fi]) > 0:
-            CellStorage.patterns.append([])
-        fi = min(fi + 1, len(CellStorage.patterns) - 1)
-        if not empty_allow and len(CellStorage.patterns[fi]) == 0 and fi > 0:
-            fi -= 1
-        if not CellStorage.point_mode:
-            CellStorage.figure = CellStorage.patterns[fi]
-        CellStorage.pattern_index = fi
-
-    @staticmethod
-    def get_figure(i=None):
-        if i is None:
-            return CellStorage.figure
-        else:
-            return CellStorage.patterns[i]
+    def add_art_by_png(img):
+        CellStorage.arts.append(CellStorage.art_by_png(img))
 
     @staticmethod
     def upd_point(i, j, s2=False):
         if s2:
-            if (i, j) in CellStorage.patterns[CellStorage.pattern_index]:
-                CellStorage.patterns[CellStorage.pattern_index].remove((i, j))
+            if (i, j, None) in CellStorage.patterns[CellStorage.pattern_index]:
+                CellStorage.patterns[CellStorage.pattern_index].remove((i, j, None))
             else:
                 if not CellStorage.erase_mode:
-                    CellStorage.patterns[CellStorage.pattern_index].append((i, j))
+                    CellStorage.patterns[CellStorage.pattern_index].append((i, j, None))
 
     @staticmethod
     def upd_point_by_motion(s2=False):
         i, j = CellStorage.mouse_cell_coord(s2)
-        if (i, j) not in CellStorage.patterns[CellStorage.pattern_index]:
+        if (i, j, None) not in CellStorage.patterns[CellStorage.pattern_index]:
             if not CellStorage.erase_mode:
-                CellStorage.patterns[CellStorage.pattern_index].append((i, j))
+                CellStorage.patterns[CellStorage.pattern_index].append((i, j, None))
         if CellStorage.erase_mode:
-            if (i, j) in CellStorage.patterns[CellStorage.pattern_index]:
-                CellStorage.patterns[CellStorage.pattern_index].remove((i, j))
+            if (i, j, None) in CellStorage.patterns[CellStorage.pattern_index]:
+                CellStorage.patterns[CellStorage.pattern_index].remove((i, j, None))
 
     @staticmethod
     def upd_figures(new_figures=None):
@@ -380,9 +428,36 @@ class CellStorage:
             CellStorage.patterns = new_figures
 
     @staticmethod
+    def upd_arts(new_arts=None):
+        if new_arts is None:
+            # art = CellStorage.arts[CellStorage.art_index]
+            CellStorage.arts = list(filter(lambda x: len(x) > 0, CellStorage.arts))
+            CellStorage.arts.append([])
+            # CellStorage.art_index = CellStorage.arts.index(art)
+        else:
+            CellStorage.arts = new_arts
+
+    @staticmethod
+    def enter_s1():
+        if CellStorage.draw_mode == CellStorage.point_mode:
+            CellStorage.figure = CellStorage.point
+        elif CellStorage.draw_mode == CellStorage.figure_mode:
+            if len(CellStorage.figure) == 0:
+                CellStorage.pattern_index = max(CellStorage.pattern_index - 1, 0)
+            CellStorage.figure = CellStorage.patterns[CellStorage.pattern_index]
+        elif CellStorage.draw_mode == CellStorage.art_mode:
+            if len(CellStorage.figure) == 0:
+                CellStorage.art_index = max(CellStorage.art_index - 1, 0)
+            CellStorage.figure = CellStorage.arts[CellStorage.art_index]
+
+    @staticmethod
+    def enter_s2():
+        CellStorage.figure = CellStorage.patterns[CellStorage.pattern_index]
+
+    @staticmethod
     def draw_figure(s2=False):
-        for i, j in CellStorage.patterns[CellStorage.pattern_index]:
-            CellStorage.s_draw(i, j, CellStorage.colors[CellStorage.color_name], s2)
+        for i, j, color in CellStorage.figure:
+            CellStorage.s_draw(i, j, color, s2)
 
 
 class Cell:

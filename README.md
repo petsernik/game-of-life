@@ -5,6 +5,7 @@ Cross-platform implementation of this game in Python in which you can
 * start/pause the game
 * save the current field as a snapshot
 * create a custom brush pattern and draw with it (also you can save your patterns)
+* create a brush pattern by PNG image
 * change
   * color of brush (different colors are mixed during the game)
   * the scale
@@ -21,7 +22,7 @@ Cross-platform implementation of this game in Python in which you can
 | Scrolling the mouse wheel         | increase/decrease the field                                       |  
 | Space or button on the top left   | start/pause Conway's game                                         |  
 | Left/right arrow                  | slow down/speed up the game twice                                 |  
-| P or MMB                          | switch pattern mode                                               |
+| P or MMB                          | switch pattern mode (point/pattern/art mode)                      |
 | Upper/lower arrow                 | switch between patterns                                           |
 | R                                 | rotate the pattern 90 degrees clockwise                           | 
 | E or button on the top right      | toggle eraser mode on/off                                         |
@@ -36,7 +37,10 @@ Cross-platform implementation of this game in Python in which you can
 | H                                 | change the hiding mode of icons (only in the field)               |  
 | ESC                               | exit the current window (in the field: exit the application)      |
 ## Notes
-Just saying that the \_\_parameters\_\_ file is a save file, it is created and then overwritten every time you save.
+Just saying that the \_\_parameters\_\_ file is a save file, it is created and then overwritten every time you save.  
+
+You can add/remove PNG images from the gallery folder to update arts (if the width or height of the PNG 
+is greater than ~50 pixels, the image will be reduced).
 
 ### Windows
 You can download the executable file from Releases.
@@ -93,5 +97,8 @@ deactivate
 ```
 
 ### Attributions
-Many thanks to https://purepng.com/ and https://iconduck.com/licenses/cc0 for [CC0-licensed](https://creativecommons.org/publicdomain/zero/1.0/) PNGs (both) and [Phosphor Icons](https://phosphoricons.com/) for [MIT-licensed](https://opensource.org/license/mit/) icons (in my repo it resources/eraser.png). 
+Many thanks to https://purepng.com/ and https://iconduck.com/licenses/cc0 for 
+[CC0-licensed](https://creativecommons.org/publicdomain/zero/1.0/) PNGs (both) and 
+[Phosphor Icons](https://phosphoricons.com/) for [MIT-licensed](https://opensource.org/license/mit/) icons 
+(in my repo it resources/eraser.png). 
 

@@ -18,14 +18,17 @@ def get_building_path(relative):
         return os.path.join(os.path.abspath("."), relative)
 
 
-def get_img(str_path, k=None, size=None, color=None):
+def get_img(str_path, k=None, size=None, color=None, can_be_less_size=False):
     img = pygame.image.load(str_path)
     if k is not None:
         img = pygame.transform.scale(
             img, (img.get_width() * k,
                   img.get_height() * k))
     if size is not None:
-        img = pygame.transform.scale(img, (size[0], size[1]))
+        if can_be_less_size:
+            img = pygame.transform.scale(img, (min(img.get_width(), size[0]), min(img.get_height(), size[1])))
+        else:
+            img = pygame.transform.scale(img, (size[0], size[1]))
     if color is not None:
         fill(img, color)
     return img
@@ -39,6 +42,8 @@ def main():
     CellStorage.screen = screen
     CellStorage.update_grid()
     resource_path = 'resources'
+    saves_path = 'saves'
+    gallery_path = 'gallery'
 
     class SaveBox(Button):
         def __init__(self, prefix, image, text=''):
@@ -141,12 +146,19 @@ def main():
 
     def to_screen(sc):
         nonlocal running_screen
+        if sc == 1:
+            CellStorage.update_grid()
+        elif sc == 2:
+            CellStorage.update_grid(s2=True)
+
         if running_screen == sc:
             if sc == 2:
                 screen_quit_2()
             elif sc == 3:
                 screen_quit_3()
+            CellStorage.update_grid()
             running_screen = 1
+            CellStorage.enter_s1()
             return
         elif running_screen == 1:
             screen_quit_1()
@@ -156,13 +168,19 @@ def main():
             screen_quit_3()
         running_screen = sc
 
+        if sc == 1:
+            CellStorage.enter_s1()
+        elif sc == 2:
+            CellStorage.enter_s2()
+
     pygame.display.set_caption('Conway\'s game of life')
     running = True
     left_click_moving_time, right_click_moving = 0.0, False
     CellStorage.x, CellStorage.y = (width - CellStorage.size) // 2, (height - CellStorage.size) // 2
     CellStorage.x2, CellStorage.y2 = CellStorage.x, CellStorage.y
     t, dt = time(), 1 / 4
-    running_screen = 1
+    running_screen = 0
+    to_screen(1)
     fake_drawing = False
     colors = list(CellStorage.colors.keys())
     fake_cells = {}
@@ -234,6 +252,19 @@ def main():
     eraser.set_action(__upd_erase_mode)
     play_box.set_action(__upd_pause)
 
+    for root, dirs, files in os.walk(gallery_path):
+        for file in files:
+            if file.endswith('.png'):
+                CellStorage.add_art_by_png(get_img(
+                    os.path.join(root,file),
+                    size=list(map(lambda _: 2 * _, __size__icon__)),
+                    can_be_less_size=True
+                ))
+
+    CellStorage.game_pause = CellStorage.pause
+
+    CellStorage.upd_figures()
+    CellStorage.upd_arts()
     while running:
         screen.fill(CellStorage.colors["white"])
         if running_screen == 1:
@@ -266,11 +297,7 @@ def main():
                     elif key == 'e':
                         eraser.action(as_btn=False)
                     elif key == 'p':
-                        CellStorage.point_mode = not CellStorage.point_mode
-                        if CellStorage.point_mode:
-                            CellStorage.set_point()
-                        else:
-                            CellStorage.set_figure()
+                        CellStorage.update_draw_mode()
                     elif key == 'g':
                         CellStorage.grid_mode = not CellStorage.grid_mode
                     elif key == 'space':
@@ -303,9 +330,9 @@ def main():
                 if event.type == pygame.KEYUP and event.key == pygame.K_b:
                     CellStorage.pause = keyboard['b'].game_pause
 
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_UP and not CellStorage.point_mode:
-                    CellStorage.set_next_figure(empty_allow=False)
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN and not CellStorage.point_mode:
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_UP:
+                    CellStorage.set_next_figure()
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
                     CellStorage.set_prev_figure()
 
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 4:
@@ -313,9 +340,7 @@ def main():
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 5:
                     CellStorage.resize(1 / 2)
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 2:
-                    CellStorage.point_mode = not CellStorage.point_mode
-                    CellStorage.set_point() if CellStorage.point_mode \
-                        else CellStorage.set_figure()
+                    CellStorage.update_draw_mode()
 
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     x, y = event.pos
@@ -324,34 +349,22 @@ def main():
                         if btn.collide_point(x, y):
                             btn.active = True
                             __break = True
+                    i, j = CellStorage.get_ij(x, y)
                     if __break:
                         pass
                     elif fake_drawing:
-                        i, j = CellStorage.get_ij(x, y)
-                        if not CellStorage.erase_mode:
-                            ij = (i, j)
-                            if CellStorage.point_mode:
-                                if ij in fake_cells:
-                                    fake_cells.pop(ij)
-                                else:
-                                    fake_cells[ij] = 1
-                            else:
-                                for dx, dy in CellStorage.figure:
-                                    if (i + dx, j + dy) not in fake_cells:
-                                        fake_cells[(i + dx, j + dy)] = 1
-                        else:
-                            for dx, dy in CellStorage.figure:
-                                if (i + dx, j + dy) in fake_cells:
-                                    fake_cells.pop((i + dx, j + dy))
-                    else:
-                        i, j = CellStorage.get_ij(x, y)
                         if CellStorage.erase_mode:
-                            CellStorage.del_by_figure(i, j)
+                            CellStorage.fake_del_by_figure(i, j, fake_cells)
+                        elif CellStorage.draw_mode == CellStorage.point_mode:
+                            CellStorage.fake_create_with_del(i, j, fake_cells)
                         else:
-                            if CellStorage.point_mode:
-                                CellStorage.create_with_del(i, j)
-                            else:
-                                CellStorage.create(i, j)
+                            CellStorage.fake_create(i, j, fake_cells)
+                    elif CellStorage.erase_mode:
+                        CellStorage.del_by_figure(i, j)
+                    elif CellStorage.draw_mode == CellStorage.point_mode:
+                        CellStorage.create_with_del(i, j)
+                    else:
+                        CellStorage.create(i, j)
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     left_click_moving_time = time()
                 if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
@@ -371,13 +384,9 @@ def main():
                                 CellStorage.create(i, j)
                         else:
                             if not CellStorage.erase_mode:
-                                for dx, dy in CellStorage.figure:
-                                    if (i + dx, j + dy) not in fake_cells:
-                                        fake_cells[(i + dx, j + dy)] = 1
+                                CellStorage.fake_create(i, j, fake_cells)
                             else:
-                                for dx, dy in CellStorage.figure:
-                                    if (i + dx, j + dy) in fake_cells:
-                                        fake_cells.pop((i + dx, j + dy))
+                                CellStorage.fake_del_by_figure(i, j, fake_cells)
                     if right_click_moving:
                         CellStorage.x += event.rel[0]
                         CellStorage.y += event.rel[1]
@@ -404,13 +413,15 @@ def main():
                     t = time()
 
             for cell in fake_cells.keys():
-                CellStorage.s_draw(cell[0], cell[1], (170, 170, 170))
-            if not CellStorage.point_mode:
-                i, j = CellStorage.mouse_cell_coord()
-                CellStorage.draw_pale(i, j)
+                CellStorage.s_draw(cell[0], cell[1], CellStorage.colors["fake"])
+            for cell in fake_cells.keys():
+                CellStorage.s_draw(cell[0], cell[1], CellStorage.colors["fake"])
 
             for cell in CellStorage.values():
                 cell.draw()
+
+            i, j = CellStorage.mouse_cell_coord()
+            CellStorage.draw_pale(i, j)
 
             if CellStorage.grid_mode:
                 CellStorage.draw_grid()
@@ -458,16 +469,16 @@ def main():
                     elif key == 'k':
                         CellStorage.patterns[CellStorage.pattern_index].clear()
                     elif key == 'left':
-                        CellStorage.set_prev_figure()
+                        CellStorage.set_prev_figure(s2=True)
                     elif key == 'right':
-                        CellStorage.set_next_figure()
+                        CellStorage.set_next_figure(empty_allow=True, s2=True)
 
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     x, y = event.pos[0], event.pos[1]
                     if s2_left.collide_point(x, y):
-                        CellStorage.set_prev_figure()
+                        CellStorage.set_prev_figure(s2=True)
                     elif s2_right.collide_point(x, y):
-                        CellStorage.set_next_figure()
+                        CellStorage.set_next_figure(empty_allow=True, s2=True)
                     elif to_s1_text.collide_point(x, y) or s2_inv.collide_point(x, y):
                         to_screen(1)
                     elif eraser.collide_point(x, y):
@@ -507,7 +518,7 @@ def main():
             for btn in buttons2:
                 btn.blit()
             if CellStorage.grid_mode:
-                CellStorage.draw_grid(True)
+                CellStorage.draw_grid(s2=True)
             pygame.display.flip()
         if running_screen == 3:
             for event in pygame.event.get():
