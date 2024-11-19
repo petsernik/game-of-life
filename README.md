@@ -16,26 +16,27 @@ Cross-platform implementation of this game in Python in which you can
 ## Now about the controls
 | control                           | action                                                            |
 |-----------------------------------|-------------------------------------------------------------------|
-| LMB                               | add/remove a living cell                                          |  
+| F1                                | get desciption Game of Life and these controls  <br> (you can scrool it by mouse wheel)                  |  
+| LMB                               | add/remove a living cell                                              |  
 | LMB (holding)                     | draw a line of living ones                                        |  
 | RMB (holding)                     | movement across the field                                         |
 | Scrolling the mouse wheel         | increase/decrease the field                                       |  
 | Space or button on the top left   | start/pause Conway's game                                         |  
 | Left/right arrow                  | slow down/speed up the game twice                                 |  
-| P or MMB                          | switch pattern mode (point/pattern/art mode)                      |
+| P or MMB                          | switch pattern mode <br> (point/pattern/art mode)                      |
 | Upper/lower arrow                 | switch between patterns                                           |
 | R                                 | rotate the pattern 90 degrees clockwise                           | 
 | E or button on the top right      | toggle eraser mode on/off                                         |
 | G                                 | toggle grid mode on/off                                           |
 | T                                 | toggle transparent mode on/off                                    |
-| 1, 2, 3, 4, 5, 0                  | drawing colors (0 is fake: i.e. does not participate in the game) |
+| 1, 2, 3, 4, 5, 0                  | drawing colors <br> (0 is fake: i.e. does not participate in the game) |
 | K / CTRL+K                        | clear living / fake cells                                         |
 | I or button on the top right      | inventory with your patterns (the last one opened is used)        |
 | CTRL+S or button on the top right | save the field and patterns                                       | 
 | CTRL+Z                            | rollback to the last save                                         |
-| V, B                              | time travel (note: only current state can be saved)               |  
-| H                                 | change the hiding mode of icons (only in the field)               |  
-| ESC                               | exit the current window (in the field: exit the application)      |
+| V, B                              | time travel <br> (note: only current state can be saved)               |  
+| H                                 | change the hiding mode of icons <br> (only in the field)               |  
+| ESC                               | exit the current window <br> (in the field: exit the application)      |
 ## Notes
 Just saying that the \_\_parameters\_\_ file is a save file, it is created and then overwritten every time you save.  
 
@@ -46,7 +47,7 @@ is greater than ~50 pixels, the image will be reduced).
 You can download the executable file from Releases.
 
 ### All platforms
-You need to install [Python](https://www.python.org/downloads/). After that open terminal / cmd / PowerShell.
+Download this repository (with `git clone` or directly from GitHub). Also you need to install [Python](https://www.python.org/downloads/) and (optional) [PyCharm Community Edition](https://www.jetbrains.com/pycharm/download/). After that open terminal / cmd / PowerShell.
 
 Create and activate virtual environment: 
 
