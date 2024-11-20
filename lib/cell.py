@@ -255,7 +255,7 @@ class CellStorage:
             if CellStorage.frame == len(CellStorage.frames) - 1:
                 CellStorage.frames[CellStorage.frame] = CellStorage.dict_cell.copy()
             else:
-                CellStorage.dict_cell = CellStorage.frames[-1]
+                CellStorage.dict_cell = CellStorage.frames[-1].copy()
             CellStorage.step_stage()
             CellStorage.frames.append(CellStorage.dict_cell.copy())
             CellStorage.dict_cell = CellStorage.frames[CellStorage.frame]
