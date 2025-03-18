@@ -1,14 +1,15 @@
 import pygame
 import os
 import sys
-import ast
 from screeninfo import get_monitors
 from time import time
-from pathlib import Path
 
-from lib.cell import CellStorage, Cell, prepare_color
+from lib.cell import CellStorage
 from lib.keyboard import KeyboardKey, update_key, get_keyboard_key
-from lib.rect import fill, Button, Text, blit_text, Rect
+from lib.rect import fill, Button, Text, blit_text, Rect, SaveBox
+
+from globals import Global
+
 
 
 def get_building_path(relative):
@@ -41,83 +42,13 @@ def main():
     screen = pygame.display.set_mode((width, height), pygame.FULLSCREEN)
     CellStorage.screen = screen
     CellStorage.update_grid()
-    resource_path = 'resources'
-    saves_path = 'saves'
-    gallery_path = 'gallery'
 
-    class SaveBox(Button):
-        def __init__(self, prefix, image, text=''):
-            super().__init__(image)
-            self.prefix = prefix
-            self.text = text
-            self.timer = time()
-            self.light = False
+    resource_path = Global.resource_path
+    gallery_path = Global.gallery_path
 
-        def make_file(self):
-            f = open(self.prefix + self.text, 'w')
-            if self.prefix == '__parameters__':
-                f.write(f'{CellStorage.x} {CellStorage.y} {CellStorage.size}\n')
-                f.write(str(list(CellStorage.keys())) + '\n' + str(CellStorage.cell_colors()) + '\n')
-                CellStorage.upd_figures()
-                f.write(f'{CellStorage.get_figure_i()}\n')
-                f.write(str(list(CellStorage.patterns)) + '\n')
-                f.write(f'{dt}\n')
-                f.write(str(list(fake_cells.keys())) + '\n')
-                f.write(f'{CellStorage.color_name}\n')
-                f.write(f'{hidden_mode}\n')
-                # f.write(f'{CellStorage.frames()}\n')
-            f.close()
-
-        def upd_by_file(self, full=True):
-            my_file = Path(self.prefix + self.text)
-            if my_file.is_file():
-                f = open(self.prefix + self.text, 'r')
-                try:
-
-                    if self.prefix == '__parameters__':
-                        _x, _y, z = map(float, f.readline().split())
-                        if full:
-                            CellStorage.x, CellStorage.y, CellStorage.size = _x, _y, z
-                        cords = ast.literal_eval(f.readline())
-                        _colors = ast.literal_eval(f.readline())
-                        CellStorage.clear()
-                        for _i in range(len(cords)):
-                            Cell(cords[_i][0], cords[_i][1], prepare_color(_colors[_i]))
-                        _x, _y, z = int(f.readline()), ast.literal_eval(f.readline()), float(f.readline())
-                        if full:
-                            nonlocal dt
-                            CellStorage.set_figure_i(_x)
-                            CellStorage.upd_figures(_y)
-                            dt = z
-                        line = f.readline()
-                        if full:
-                            fake_cells.clear()
-                            for _cell in ast.literal_eval(line):
-                                fake_cells[_cell] = 1
-                        color = f.readline().split()[0]
-                        if full:
-                            CellStorage.set_color(color)
-                        line = f.readline()
-                        if full:
-                            nonlocal hidden_mode
-                            hidden_mode = int(line)
-                        # CellStorage.read_frames(f.read line())
-                except Exception as exc:
-                    print(exc)
-                finally:
-                    f.close()
-
-        def launch(self):
-            self.timer = time()
-            self.make_file()
-            self.set_color('red')
-            self.light = True
-
-        def dis_light(self):
-            if time() - self.timer >= 0.16:
-                self.light = False
-            if not self.light:
-                self.set_color('black')
+    Global.t, Global.dt = time(), 1 / 4
+    Global.fake_cells = {}
+    Global.hidden_mode = 0
 
     def screen_quit_1():
         nonlocal left_click_moving_time, right_click_moving
@@ -131,12 +62,12 @@ def main():
         screen_quit_1()
 
     def hide_buttons():
-        if hidden_mode == 0:
+        if Global.hidden_mode == 0:
             for _btn in buttons1:
                 _btn.hidden = False
-        elif hidden_mode == 1:
+        elif Global.hidden_mode == 1:
             play_box.hidden = True
-        elif hidden_mode == 2:
+        elif Global.hidden_mode == 2:
             for _btn in buttons1:
                 _btn.hidden = True
 
@@ -170,14 +101,12 @@ def main():
     left_click_moving_time, right_click_moving = 0.0, False
     CellStorage.x, CellStorage.y = (width - CellStorage.size) // 2, (height - CellStorage.size) // 2
     CellStorage.x2, CellStorage.y2 = CellStorage.x, CellStorage.y
-    t, dt = time(), 1 / 4
+
     running_screen = 0
     to_screen(1)
     fake_drawing = False
     colors = list(CellStorage.colors.keys())
-    fake_cells = {}
     keyboard = dict([(key, KeyboardKey()) for key in KeyboardKey.all_keys()])
-    hidden_mode = 0
     print_info = False
 
     t_extra, dt_extra = time(), 1 / 2
@@ -200,33 +129,6 @@ def main():
     font = pygame.font.Font(None, 48)
     to_s1_text = Text(font.render('Return to the field', True, "black"))
     to_s1_text.upd_pos((width - to_s1_text.width()) // 2 - 10, height - 2 * to_s1_text.height())
-    info_text = ('The "Game of Life" by John Conway. \n'
-                    'You place living cells on a grid, and then in each step the following happens: \n'
-                    '1) A live cell survives if it has two or three live neighbors (out of 8). \n'
-                    '2) Otherwise, a live cell dies. \n'
-                    '3) A dead cell becomes alive if it has exactly 3 live neighbors. \n'
-                    'Now about the controls: \n'
-                    'Left mouse button (LMB) - place/remove a live cell. \n'
-                    'LMB (held down) - draw a line of live cells. \n'
-                    'Right mouse button (RMB, held down) - move around the field. \n'
-                    'Space key - start/pause Conway\'s game.\n'
-                    'Left/right arrow keys - slow down/speed up the game by a factor of two. \n'
-                    'Mouse wheel - zoom in/out the field. \n'
-                    'Key p or middle mouse button (MMB) - switch pattern mode. \n'
-                    'Up/down arrow keys - switch between patterns. \n'
-                    'Key r - rotate pattern 90 degrees clockwise. \n'
-                    'Key e or button in the top-right corner - toggle eraser mode. \n'
-                    'Key g - toggle grid mode on/off. \n'
-                    'Key t - toggle transparent mode on/off. \n'
-                    '1, 2, 3, 4, 5, 0 - drawing colors (0 is fake: i.e. does not participate in the game). \n'
-                    'Key k - clear the field, ctrl+k - clear fake color cells. \n'
-                    'Key i or the button in the top-right corner - you also have the option to create/delete patterns and select them from the inventory '
-                    '(the last opened pattern is used). \n'
-                    'Ctrl+s or the button in the top-right corner - save the field and patterns. \n'
-                    'Ctrl+z - revert to the last saved state. \n'
-                    'v, b - time travel (not saved). \n'
-                    'Key h - toggle icon visibility mode (in the field). \n'
-                    'Esc key - exit the current window (in the field: exit the application). \n')
     save = SaveBox('__parameters__', get_img(get_building_path(f'{resource_path}/save.png'), size=__size__icon__))
     save.upd_rect(info.pos()[0] - info.width() - 5, __right_height, info.width(), info.height())
     save.upd_by_file()
@@ -279,7 +181,7 @@ def main():
 
     surf = pygame.Surface((3 * width // 10, 3 * height))
     surf.fill((255, 255, 255))
-    blit_text(surf, info_text, (0, 0), pygame.font.SysFont('Courier New', 22))
+    blit_text(surf, Global.info_text, (0, 0), pygame.font.SysFont('Courier New', 22))
     shift_info_text_y = 0
 
     info_rect = Rect((0, 0, surf.get_width(), height))
@@ -312,7 +214,7 @@ def main():
                     elif key == 'i':
                         s2_inv.action(as_btn=False)
                     elif key == 'h':
-                        hidden_mode = (hidden_mode + 1) % 3
+                        Global.hidden_mode = (Global.hidden_mode + 1) % 3
                     elif key == 'esc':
                         running = False
                     elif key == 'F1':
@@ -326,9 +228,9 @@ def main():
                     elif key == 'space':
                         play_box.action(as_btn=False)
                     elif key == 'left':
-                        dt = min(2 * dt, 4)
+                        Global.dt = min(2 * Global.dt, 4)
                     elif key == 'right':
-                        dt = max(dt / 2, 1 / 2 ** 7)
+                        Global.dt = max(Global.dt / 2, 1 / 2 ** 7)
                     elif key == 'v':
                         CellStorage.left_frame()
                         keyboard['v'].game_pause = keyboard['b'].game_pause if keyboard['b'].is_pressed \
@@ -340,7 +242,7 @@ def main():
 
                 if keyboard['ctrl'].is_pressed:
                     if keyboard['k'].is_pressed:
-                        fake_cells.clear()
+                        Global.fake_cells.clear()
                     if keyboard['s'].is_pressed:
                         save.launch()
                     if keyboard['z'].is_pressed:
@@ -385,11 +287,11 @@ def main():
                         pass
                     elif fake_drawing:
                         if CellStorage.erase_mode:
-                            CellStorage.fake_del_by_figure(i, j, fake_cells)
+                            CellStorage.fake_del_by_figure(i, j, Global.fake_cells)
                         elif CellStorage.draw_mode == CellStorage.point_mode:
-                            CellStorage.fake_create_with_del(i, j, fake_cells)
+                            CellStorage.fake_create_with_del(i, j, Global.fake_cells)
                         else:
-                            CellStorage.fake_create(i, j, fake_cells)
+                            CellStorage.fake_create(i, j, Global.fake_cells)
                     elif CellStorage.erase_mode:
                         CellStorage.del_by_figure(i, j)
                     elif CellStorage.draw_mode == CellStorage.point_mode:
@@ -415,9 +317,9 @@ def main():
                                 CellStorage.create(i, j)
                         else:
                             if not CellStorage.erase_mode:
-                                CellStorage.fake_create(i, j, fake_cells)
+                                CellStorage.fake_create(i, j, Global.fake_cells)
                             else:
-                                CellStorage.fake_del_by_figure(i, j, fake_cells)
+                                CellStorage.fake_del_by_figure(i, j, Global.fake_cells)
                     if right_click_moving:
                         CellStorage.x += event.rel[0]
                         CellStorage.y += event.rel[1]
@@ -430,7 +332,7 @@ def main():
 
             hide_buttons()
 
-            if time() - t >= dt:
+            if time() - Global.t >= Global.dt:
                 if keyboard['v'].is_holding():
                     CellStorage.left_frame()
                     CellStorage.pause = True
@@ -444,15 +346,15 @@ def main():
                 if not CellStorage.pause:
                     CellStorage.new_stage()
 
-                t = time()
+                Global.t = time()
 
-            if slow_mode or time() - t_extra >= dt:
+            if slow_mode or time() - t_extra >= Global.dt:
                 if slow_mode or (no_event and CellStorage.pause):
                     CellStorage.extra_stage()
                 else:
                     t_extra = time()
 
-            for cell in fake_cells.keys():
+            for cell in Global.fake_cells.keys():
                 CellStorage.s_draw(cell[0], cell[1], CellStorage.colors["fake"])
 
             for cell in CellStorage.values():
@@ -476,8 +378,9 @@ def main():
             slow_switch.hidden = False if slow_mode else True
             for btn in buttons1:
                 btn.blit()
-            if hidden_mode == 0:
-                blit_text(screen, f' {int(1 / dt) if 1 / dt == int(1 / dt) else 1 / dt} FPS',
+            if Global.hidden_mode == 0:
+                blit_text(screen,
+                          f' {int(1 / Global.dt) if 1 / Global.dt == int(1 / Global.dt) else 1 / Global.dt} FPS',
                           (play_box.pos()[0] + play_box.width(), play_box.pos()[1] + play_box.height() // 4),
                           pygame.font.SysFont('Courier New', 20))
 
@@ -501,7 +404,7 @@ def main():
                         CellStorage.set_color('fake')
                         fake_drawing = True
                     elif key == 'h':
-                        hidden_mode = (hidden_mode + 1) % 3
+                        Global.hidden_mode = (Global.hidden_mode + 1) % 3
                     elif key == 'r':
                         CellStorage.rotate()
                     elif key == 'i' or key == 'esc':

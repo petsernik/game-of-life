@@ -1,5 +1,10 @@
+import ast
+from pathlib import Path
+from time import time
 import pygame.display
 
+from lib.cell import CellStorage, Cell, prepare_color
+from globals import Global
 
 class Rect:
     def __init__(self, rect=(0, 0, 0, 0)):
@@ -63,6 +68,79 @@ class Button(Rect):
         if (self.active and not self.hidden) or not as_btn:
             self.__action()
         self.active = False
+
+
+class SaveBox(Button):
+    def __init__(self, prefix, image, text=''):
+        super().__init__(image)
+        self.prefix = prefix
+        self.text = text
+        self.timer = time()
+        self.light = False
+
+    def make_file(self):
+        f = open(self.prefix + self.text, 'w')
+        if self.prefix == '__parameters__':
+            f.write(f'{CellStorage.x} {CellStorage.y} {CellStorage.size}\n')
+            f.write(str(list(CellStorage.keys())) + '\n' + str(CellStorage.cell_colors()) + '\n')
+            CellStorage.upd_figures()
+            f.write(f'{CellStorage.get_figure_i()}\n')
+            f.write(str(list(CellStorage.patterns)) + '\n')
+            f.write(f'{Global.dt}\n')
+            f.write(str(list(Global.fake_cells.keys())) + '\n')
+            f.write(f'{CellStorage.color_name}\n')
+            f.write(f'{Global.hidden_mode}\n')
+            # f.write(f'{CellStorage.frames()}\n')
+        f.close()
+
+    def upd_by_file(self, full=True):
+        my_file = Path(self.prefix + self.text)
+        if my_file.is_file():
+            f = open(self.prefix + self.text, 'r')
+            try:
+
+                if self.prefix == '__parameters__':
+                    _x, _y, z = map(float, f.readline().split())
+                    if full:
+                        CellStorage.x, CellStorage.y, CellStorage.size = _x, _y, z
+                    cords = ast.literal_eval(f.readline())
+                    _colors = ast.literal_eval(f.readline())
+                    CellStorage.clear()
+                    for _i in range(len(cords)):
+                        Cell(cords[_i][0], cords[_i][1], prepare_color(_colors[_i]))
+                    _x, _y, z = int(f.readline()), ast.literal_eval(f.readline()), float(f.readline())
+                    if full:
+                        CellStorage.set_figure_i(_x)
+                        CellStorage.upd_figures(_y)
+                        Global.dt = z
+                    line = f.readline()
+                    if full:
+                        Global.fake_cells.clear()
+                        for _cell in ast.literal_eval(line):
+                            Global.fake_cells[_cell] = 1
+                    color = f.readline().split()[0]
+                    if full:
+                        CellStorage.set_color(color)
+                    line = f.readline()
+                    if full:
+                        Global.hidden_mode = int(line)
+                    # CellStorage.read_frames(f.read line())
+            except Exception as exc:
+                print(exc)
+            finally:
+                f.close()
+
+    def launch(self):
+        self.timer = time()
+        self.make_file()
+        self.set_color('red')
+        self.light = True
+
+    def dis_light(self):
+        if time() - self.timer >= 0.16:
+            self.light = False
+        if not self.light:
+            self.set_color('black')
 
 
 class Text(Rect):
