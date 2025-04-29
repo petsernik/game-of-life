@@ -1,32 +1,10 @@
+import os
+
+
 class Global:
     resource_path = 'resources'
     saves_path = 'saves'
     gallery_path = 'gallery'
-    
-    info_text = ('The "Game of Life" by John Conway. \n'
-                 'You place living cells on a grid, and then in each step the following happens: \n'
-                 '1) A live cell survives if it has two or three live neighbors (out of 8). \n'
-                 '2) Otherwise, a live cell dies. \n'
-                 '3) A dead cell becomes alive if it has exactly 3 live neighbors. \n'
-                 'Now about the controls: \n'
-                 'Left mouse button (LMB) - place/remove a live cell. \n'
-                 'LMB (held down) - draw a line of live cells. \n'
-                 'Right mouse button (RMB, held down) - move around the field. \n'
-                 'Space key - start/pause Conway\'s game.\n'
-                 'Left/right arrow keys - slow down/speed up the game by a factor of two. \n'
-                 'Mouse wheel - zoom in/out the field. \n'
-                 'Key p or middle mouse button (MMB) - switch pattern mode. \n'
-                 'Up/down arrow keys - switch between patterns. \n'
-                 'Key r - rotate pattern 90 degrees clockwise. \n'
-                 'Key e or button in the top-right corner - toggle eraser mode. \n'
-                 'Key g - toggle grid mode on/off. \n'
-                 'Key t - toggle transparent mode on/off. \n'
-                 '1, 2, 3, 4, 5, 0 - drawing colors (0 is fake: i.e. does not participate in the game). \n'
-                 'Key k - clear the field, ctrl+k - clear fake color cells. \n'
-                 'Key i or the button in the top-right corner - you also have the option to create/delete patterns and select them from the inventory '
-                 '(the last opened pattern is used). \n'
-                 'Ctrl+s or the button in the top-right corner - save the field and patterns. \n'
-                 'Ctrl+z - revert to the last saved state. \n'
-                 'v, b - time travel (not saved). \n'
-                 'Key h - toggle icon visibility mode (in the field). \n'
-                 'Esc key - exit the current window (in the field: exit the application). \n')
+
+    with open(os.path.join(resource_path, 'info.txt'), 'r', encoding='utf-8') as f:
+        info_text = f.read()

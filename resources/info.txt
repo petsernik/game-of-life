@@ -1,0 +1,26 @@
+The "Game of Life" by John Conway.
+You place living cells on a grid, and then in each step the following happens:
+1) A live cell survives if it has two or three live neighbors (out of 8).
+2) Otherwise, a live cell dies.
+3) A dead cell becomes alive if it has exactly 3 live neighbors.
+Now about the controls:
+Left mouse button (LMB) - place/remove a live cell.
+LMB (held down) - draw a line of live cells.
+Right mouse button (RMB, held down) - move around the field.
+Space key - start/pause Conway's game.
+Left/right arrow keys - slow down/speed up the game by a factor of two.
+Mouse wheel - zoom in/out the field.
+Key p or middle mouse button (MMB) - switch pattern mode.
+Up/down arrow keys - switch between patterns.
+Key r - rotate pattern 90 degrees clockwise.
+Key e or button in the top-right corner - toggle eraser mode.
+Key g - toggle grid mode on/off.
+Key t - toggle transparent mode on/off.
+1, 2, 3, 4, 5, 0 - drawing colors (0 is fake: i.e. does not participate in the game).
+Key k - clear the field, ctrl+k - clear fake color cells.
+Key i or the button in the top-right corner - you also have the option to create/delete patterns and select them from the inventory (the last opened pattern is used).
+Ctrl+s or the button in the top-right corner - save the field and patterns.
+Ctrl+z - revert to the last saved state.
+v, b - time travel (not saved).
+Key h - toggle icon visibility mode (in the field).
+Esc key - exit the current window (in the field: exit the application).
