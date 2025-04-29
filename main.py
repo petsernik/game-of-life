@@ -36,12 +36,18 @@ def main():
     monitor = get_monitors()[0]
     width, height = monitor.width, monitor.height
     screen = pygame.display.set_mode((width, height), pygame.FULLSCREEN)
+
+    # Initialize core components
     CellStorage.screen = screen
     CellStorage.update_grid()
+    CellStorage.x = CellStorage.x2 = (width - CellStorage.size) // 2
+    CellStorage.y = CellStorage.y2 = (height - CellStorage.size) // 2
 
+    # Path configurations
     resource_path = Global.resource_path
     gallery_path = Global.gallery_path
 
+    # Game state initialization
     Global.t, Global.dt = time(), 1 / 4
     Global.fake_cells = {}
     Global.hidden_mode = 0
@@ -95,8 +101,6 @@ def main():
     pygame.display.set_caption('Conway\'s game of life')
     running = True
     left_click_moving_time, right_click_moving = 0.0, False
-    CellStorage.x, CellStorage.y = (width - CellStorage.size) // 2, (height - CellStorage.size) // 2
-    CellStorage.x2, CellStorage.y2 = CellStorage.x, CellStorage.y
 
     running_screen = 0
     to_screen(1)
@@ -110,30 +114,51 @@ def main():
 
     __len__icon__ = min(50 * width // 1920, 50 * height // 1080)
     __size__icon__ = (__len__icon__, __len__icon__)
-    s2_left = Button(get_img(get_building_path(f'{resource_path}/left.png'), size=(lambda xy: (2 * xy[0], 2 * xy[1]))(__size__icon__)))
+    __doubled__icon__ = (lambda xy: (2 * xy[0], 2 * xy[1]))(__size__icon__)
+
+    # UI Elements
+    def create_button(img_name, size=__size__icon__):
+        return Button(get_img(
+            get_building_path(f'{resource_path}/{img_name}'),
+            size=size
+        ))
+
+    # Screen 1 elements
+    s2_inv = create_button('i.png')
+    eraser = create_button('eraser.png')
+    info = create_button('info.png', size=__size__icon__)
+    play_box = create_button('play.png')
+    slow_switch = create_button('turtle.png')
+    save = SaveBox('__parameters__', get_img(
+        get_building_path(f'{resource_path}/save.png'),
+        size=__size__icon__
+    ))
+
+    # Position elements
+    right_height = 12
+    right_x = width - 10
+    play_box.upd_pos(10, right_height)
+    slow_switch.upd_pos(10, play_box.pos()[1] + play_box.height())
+    for btn in [s2_inv, eraser, info]:
+        right_x -= btn.width() + 5
+        btn.upd_pos(right_x, right_height)
+    save.upd_rect(info.pos()[0] - info.width() - 5, right_height, info.width(), info.height())
+    save.upd_by_file()
+
+    # Screen 2 elements
+    s2_left = create_button('left.png', __doubled__icon__)
+    s2_right = create_button('right.png', __doubled__icon__)
     s2_left.upd_pos(10, (height - s2_left.height()) // 2)
-    s2_right = Button(
-        get_img(get_building_path(f'{resource_path}/right.png'), size=(lambda xy: (2 * xy[0], 2 * xy[1]))(__size__icon__)))
     s2_right.upd_pos(width - s2_right.width() - 10, (height - s2_left.height()) // 2)
-    s2_inv = Button(get_img(get_building_path(f'{resource_path}/i.png'), size=__size__icon__))
-    __right_height = 12
-    s2_inv.upd_pos(width - 10 - s2_inv.width() - 5, __right_height)
-    eraser = Button(get_img(get_building_path(f'{resource_path}/eraser.png'), size=__size__icon__))
-    eraser.upd_pos(s2_inv.pos()[0] - eraser.width() - 5, __right_height)
-    info = Button(get_img(get_building_path(f'{resource_path}/info.png'), size=__size__icon__, color='black'))
-    info.upd_pos(eraser.pos()[0] - info.width() - 5, __right_height)
+
+    # Text elements
     font = pygame.font.Font(None, 48)
     to_s1_text = Text(font.render('Return to the field', True, "black"))
     to_s1_text.upd_pos((width - to_s1_text.width()) // 2 - 10, height - 2 * to_s1_text.height())
-    save = SaveBox('__parameters__', get_img(get_building_path(f'{resource_path}/save.png'), size=__size__icon__))
-    save.upd_rect(info.pos()[0] - info.width() - 5, __right_height, info.width(), info.height())
-    save.upd_by_file()
-    play_box = Button(get_img(get_building_path(f'{resource_path}/play.png'), size=__size__icon__))
-    play_box.upd_pos(10, __right_height)
-    slow_switch = Button(get_img(get_building_path(f'{resource_path}/turtle.png'), size=__size__icon__))
-    slow_switch.upd_pos(10, play_box.pos()[1] + play_box.height())
+
     buttons1 = [s2_inv, eraser, info, save, play_box, slow_switch]
     buttons2 = [s2_left, s2_right, s2_inv, eraser, info, save]
+
     s2_left.set_action(CellStorage.set_prev_figure)
     s2_right.set_action(CellStorage.set_next_figure)
     s2_inv.set_action(lambda: to_screen(2))
