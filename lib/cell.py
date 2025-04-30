@@ -1,6 +1,10 @@
 import math
+from itertools import product
+from typing import Optional
 
 import pygame
+
+from lib.music import play_note
 
 
 def prepare_color(color):
@@ -30,12 +34,20 @@ def update_mode(mode, cur_mode, number_of_modes):
         return mode
 
 
+def number_by_bits(booleans: list[bool]) -> int:
+    num = 0
+    deg = 0
+    for boolean in booleans:
+        num += boolean * (1 << deg)
+        deg += 1
+    return num
+
 class CellStorage:
     x, y = 0, 0
     x2, y2 = 0, 0
     size = 64
     size2 = 64
-    extra = 2**20
+    extra = 2 ** 20
     pause = True
     point_mode, figure_mode, art_mode = 0, 1, 2
     draw_mode = point_mode
@@ -46,6 +58,7 @@ class CellStorage:
     transparency_mode = transparency_init
     number_of_transparency_modes = 2
     frames = [{}]
+    frames_medium_colors = [(230, 0, 0, 255)]
     frame = 0
     dict_cell = {}
     new_cells = {}
@@ -121,10 +134,9 @@ class CellStorage:
         a += cs_size
         b += cs_size
 
-        CellStorage.grid = pygame.Surface((a,b))
+        CellStorage.grid = pygame.Surface((a, b))
         CellStorage.grid.set_alpha(40)
         CellStorage.grid.fill((255, 255, 255))
-
 
         for i in range(int(a / cs_size) + 1):
             pygame.draw.aaline(CellStorage.grid,
@@ -139,7 +151,7 @@ class CellStorage:
                                [a, j * cs_size])
 
     @staticmethod
-    def update_collection_by_figure(fig = None):
+    def update_collection_by_figure(fig=None):
         if fig is None:
             fig = CellStorage.figure
         if CellStorage.draw_mode == CellStorage.figure_mode:
@@ -147,17 +159,22 @@ class CellStorage:
         elif CellStorage.draw_mode == CellStorage.art_mode:
             CellStorage.arts[CellStorage.art_index] = fig
 
-
     @staticmethod
     def rotate():
         CellStorage.figure = [(j, -i, c) for i, j, c in CellStorage.figure]
         CellStorage.update_collection_by_figure()
 
     @staticmethod
+    def update_by_frame(frame=None):
+        if frame is None:
+            return CellStorage.update_by_frame(CellStorage.frame)
+        CellStorage.dict_cell = CellStorage.frames[frame]
+
+    @staticmethod
     def left_frame():
         if CellStorage.frame >= 1:
             CellStorage.frame -= 1
-            CellStorage.dict_cell = CellStorage.frames[CellStorage.frame]
+            CellStorage.update_by_frame()
 
     @staticmethod
     def right_frame():
@@ -165,7 +182,7 @@ class CellStorage:
             CellStorage.new_stage()
         else:
             CellStorage.frame += 1
-            CellStorage.dict_cell = CellStorage.frames[CellStorage.frame]
+            CellStorage.update_by_frame()
 
     @staticmethod
     def s_draw(i, j, color=None, s2=False, ignore_t_mode=False):
@@ -229,6 +246,13 @@ class CellStorage:
         for p in CellStorage.neigh:
             if (i + p[0], j + p[1]) in CellStorage.dict_cell:
                 lst.append(CellStorage.dict_cell[(i + p[0], j + p[1])])
+        return CellStorage.medium_color(lst)
+
+    @staticmethod
+    def medium_color(lst=None):
+        if lst is None:
+            return CellStorage.medium_color(CellStorage.dict_cell.values())
+
         r, g, b, a = 0, 0, 0, 0
         for cell in lst:
             r += cell.color[0] ** 2
@@ -250,6 +274,11 @@ class CellStorage:
         CellStorage.del_cells, CellStorage.new_cells = {}, {}
 
     @staticmethod
+    def append():
+        CellStorage.frames.append(CellStorage.dict_cell.copy())
+        CellStorage.frames_medium_colors.append(CellStorage.medium_color())
+
+    @staticmethod
     def extra_stage():
         if len(CellStorage.frames) < CellStorage.frame + CellStorage.extra:
             if CellStorage.frame == len(CellStorage.frames) - 1:
@@ -257,19 +286,50 @@ class CellStorage:
             else:
                 CellStorage.dict_cell = CellStorage.frames[-1].copy()
             CellStorage.step_stage()
-            CellStorage.frames.append(CellStorage.dict_cell.copy())
-            CellStorage.dict_cell = CellStorage.frames[CellStorage.frame]
+            CellStorage.append()
+            CellStorage.update_by_frame()
 
     @staticmethod
     def new_stage():
         if CellStorage.frame != len(CellStorage.frames) - 1:
             CellStorage.frame += 1
-            CellStorage.dict_cell = CellStorage.frames[CellStorage.frame]
+            CellStorage.update_by_frame()
         else:
             CellStorage.frames[CellStorage.frame] = CellStorage.dict_cell.copy()
             CellStorage.step_stage()
             CellStorage.frame += 1
-            CellStorage.frames.append(CellStorage.dict_cell.copy())
+            CellStorage.append()
+
+    @staticmethod
+    def play_music(note_dur: float):
+        clr = CellStorage.medium_color()
+        booleans = [clr[i] >= 128 for i in range(3)]
+        tonality_index = number_by_bits(booleans)
+
+        n = 8
+        # was[r][c] = True if there is a cell at row r, col c
+        was = [[False for _ in range(n)] for _ in range(n)]
+
+        for cell in CellStorage.dict_cell.values():
+            r = int(cell.i) % n
+            c = int(cell.j) % n
+            was[r][c] = True
+
+        # rightmost[r] will hold the largest column index in row r, or None
+        rightmost: list[Optional[int]] = [None] * n
+
+        # scan each row r and column c
+        for r, c in product(range(n), range(n)):
+            if was[r][c]:
+                # if first hit in this row, or c is greater than current
+                if rightmost[r] is None or c > rightmost[r]:
+                    rightmost[r] = c
+
+        # play a note for each row where we found at least one cell
+        for r, c in enumerate(rightmost):
+            if c is not None:
+                play_note(tonality_index, c, r, note_dur=note_dur)
+
 
     @staticmethod
     def mouse_cell_coord(s2=False):

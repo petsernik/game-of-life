@@ -5,6 +5,8 @@ import os
 
 
 class Global:
+    use_music = False
+    dt_music = 1 / 2
     RESOURCES_PATH = 'resources'
     SAVES_PATH = 'saves'
     GALLERY_PATH = 'gallery'

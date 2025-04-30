@@ -11,6 +11,7 @@ Cross-platform implementation of this game in Python in which you can
   * the scale
   * game speed
 * rollback time  
+* turn on music by game state (8 possible tonalities, which depends on the colors)
 * do something else
 
 ## Now about the controls
@@ -35,6 +36,7 @@ Cross-platform implementation of this game in Python in which you can
 | CTRL+S or button on the top right | save the field and patterns                                                                 | 
 | CTRL+Z                            | rollback to the last save                                                                   |
 | V, B                              | time travel <br> (note: only current state can be saved)                                    |  
+| M                                 | toggle music mode on/off                                                                    |
 | H                                 | change the hiding mode of icons <br> (only in the field)                                    |  
 | ESC                               | exit the current window <br> (in the field: exit the application)                           |
 ## Notes
@@ -66,16 +68,16 @@ python -m venv .venv
 ```
 
 ```bash
-.venv\Scripts\activate.bat # for Windows from cmd
+.venv\Scripts\activate.bat # works only for Windows from cmd
 ```
 
 ```bash
-.venv\Scripts\activate.ps1 # for all platforms from PS
+.venv\Scripts\activate.ps1 # works for all platforms from PS
 ```
 
 Install necessary libraries:
 ```bash
-pip install pygame screeninfo
+pip install pygame screeninfo numpy
 ```
 
 Now you can run main.py and enjoy the game:
@@ -103,4 +105,7 @@ Many thanks to:
 [CC0-licensed](https://creativecommons.org/publicdomain/zero/1.0/) PNGs.
 * [Phosphor Icons](https://phosphoricons.com/) for [MIT-licensed](https://opensource.org/license/mit/) icons 
 (in my repo it resources/eraser.png). 
+* [AlgoMotion](https://www.youtube.com/@AlgoMotion) for YouTube video
+  ['Conway's Game of Life as a Musical Instrument'](https://www.youtube.com/watch?v=b2SjVwYNr54),
+  which helped me add music to this app.
 

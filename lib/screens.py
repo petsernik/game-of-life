@@ -68,6 +68,8 @@ def update_screen1(context: UIContext):
                 CellStorage.right_frame()
                 context.keyboard['b'].game_pause = context.keyboard['v'].game_pause if context.keyboard[
                     'v'].is_pressed else CellStorage.pause
+            elif key == 'm':
+                Global.use_music = not Global.use_music
 
         if context.keyboard['ctrl'].is_pressed:
             if context.keyboard['k'].is_pressed:
@@ -176,6 +178,11 @@ def update_screen1(context: UIContext):
         if not CellStorage.pause:
             CellStorage.new_stage()
         Global.t = time()
+
+    if time() - Global.t_music >= Global.dt_music and Global.use_music:
+        if not CellStorage.pause:
+            CellStorage.play_music(Global.dt_music * 2)
+        Global.t_music = time()
 
     if context.slow_mode or time() - Global.t >= Global.dt:
         if context.slow_mode or (no_event and CellStorage.pause):

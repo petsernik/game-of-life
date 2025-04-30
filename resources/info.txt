@@ -22,5 +22,6 @@ Key i or the button in the top-right corner - you also have the option to create
 Ctrl+s or the button in the top-right corner - save the field and patterns.
 Ctrl+z - revert to the last saved state.
 v, b - time travel (not saved by ctrl+s).
+Key m - toggle music mode on/off.
 Key h - toggle icon visibility mode (in the field).
 Esc key - exit the current window (in the field: exit the application).

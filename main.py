@@ -48,6 +48,8 @@ def main():
     Global.t, Global.dt = time(), 1 / 4
     Global.fake_cells = {}
     Global.hidden_mode = 0
+    Global.use_music = False
+    Global.t_music, Global.dt_music = time(), 1 / 2
 
     __len__icon__ = min(50 * width // 1920, 50 * height // 1080)
     __size__icon__ = (__len__icon__, __len__icon__)
