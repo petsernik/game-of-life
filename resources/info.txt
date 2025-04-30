@@ -21,6 +21,6 @@ Key k - clear the field, ctrl+k - clear fake color cells.
 Key i or the button in the top-right corner - you also have the option to create/delete patterns and select them from the inventory (the last opened pattern is used).
 Ctrl+s or the button in the top-right corner - save the field and patterns.
 Ctrl+z - revert to the last saved state.
-v, b - time travel (not saved).
+v, b - time travel (not saved by ctrl+s).
 Key h - toggle icon visibility mode (in the field).
 Esc key - exit the current window (in the field: exit the application).

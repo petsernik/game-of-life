@@ -436,7 +436,7 @@ class CellStorage:
                 CellStorage.patterns[CellStorage.pattern_index].remove((i, j, None))
 
     @staticmethod
-    def upd_figures(new_figures=None):
+    def update_figures(new_figures=None):
         if new_figures is None:
             figure = CellStorage.patterns[CellStorage.pattern_index]
             CellStorage.patterns = list(filter(lambda x: len(x) > 0, CellStorage.patterns))
@@ -446,7 +446,7 @@ class CellStorage:
             CellStorage.patterns = new_figures
 
     @staticmethod
-    def upd_arts(new_arts=None):
+    def update_arts(new_arts=None):
         if new_arts is None:
             # art = CellStorage.arts[CellStorage.art_index]
             CellStorage.arts = list(filter(lambda x: len(x) > 0, CellStorage.arts))

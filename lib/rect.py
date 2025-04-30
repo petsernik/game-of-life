@@ -4,7 +4,9 @@ from time import time
 import pygame.display
 
 from lib.cell import CellStorage, Cell, prepare_color
+
 from globals import Global
+
 
 class Rect:
     def __init__(self, rect=(0, 0, 0, 0)):
@@ -83,7 +85,7 @@ class SaveBox(Button):
         if self.prefix == '__parameters__':
             f.write(f'{CellStorage.x} {CellStorage.y} {CellStorage.size}\n')
             f.write(str(list(CellStorage.keys())) + '\n' + str(CellStorage.cell_colors()) + '\n')
-            CellStorage.upd_figures()
+            CellStorage.update_figures()
             f.write(f'{CellStorage.get_figure_i()}\n')
             f.write(str(list(CellStorage.patterns)) + '\n')
             f.write(f'{Global.dt}\n')
@@ -111,7 +113,7 @@ class SaveBox(Button):
                     _x, _y, z = int(f.readline()), ast.literal_eval(f.readline()), float(f.readline())
                     if full:
                         CellStorage.set_figure_i(_x)
-                        CellStorage.upd_figures(_y)
+                        CellStorage.update_figures(_y)
                         Global.dt = z
                     line = f.readline()
                     if full:

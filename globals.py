@@ -1,10 +1,45 @@
+from dataclasses import dataclass
+
+import pygame
 import os
 
 
 class Global:
-    resource_path = 'resources'
-    saves_path = 'saves'
-    gallery_path = 'gallery'
+    RESOURCES_PATH = 'resources'
+    SAVES_PATH = 'saves'
+    GALLERY_PATH = 'gallery'
 
-    with open(os.path.join(resource_path, 'info.txt'), 'r', encoding='utf-8') as f:
-        info_text = f.read()
+    with open(os.path.join(RESOURCES_PATH, 'info.txt'), 'r', encoding='utf-8') as f:
+        INFO_TEXT = f.read()
+    fake_cells = {}
+
+
+from lib.rect import Button, Text, Rect, SaveBox
+
+
+@dataclass
+class UIContext:
+    running: bool
+    running_screen: int
+    keyboard: dict
+    shift_info_text_y: int
+    buttons1: list
+    buttons2: list
+    play_box: Button
+    eraser: Button
+    slow_switch: Button
+    info: Button
+    save: SaveBox
+    s2_inv: Button
+    s2_left: Button
+    s2_right: Button
+    to_s1_text: Text
+    surf: pygame.Surface
+    info_rect: Rect
+    colors: list
+    font: pygame.font.Font
+    print_info: bool = False
+    fake_drawing: bool = False
+    left_click_moving_time: float = 0.0
+    right_click_moving: bool = False
+    slow_mode: bool = False

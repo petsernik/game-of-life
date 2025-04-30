@@ -4,11 +4,13 @@ import sys
 from screeninfo import get_monitors
 from time import time
 
+from globals import Global, UIContext
+from lib.screens import update_screen, to_screen
+
 from lib.cell import CellStorage
-from lib.keyboard import KeyboardKey, update_key, get_keyboard_key
+from lib.keyboard import KeyboardKey
 from lib.rect import fill, Button, Text, blit_text, Rect, SaveBox
 
-from globals import Global
 
 def get_building_path(relative):
     if hasattr(sys, '_MEIPASS'):
@@ -16,23 +18,22 @@ def get_building_path(relative):
     else:
         return os.path.join(os.path.abspath("."), relative)
 
+
 def get_img(str_path, k=None, size=None, color=None, can_be_less_size=False):
     img = pygame.image.load(str_path)
-    if k is not None:
-        img = pygame.transform.scale(
-            img, (img.get_width() * k,
-                  img.get_height() * k))
-    if size is not None:
-        if can_be_less_size:
-            img = pygame.transform.scale(img, (min(img.get_width(), size[0]), min(img.get_height(), size[1])))
-        else:
-            img = pygame.transform.scale(img, (size[0], size[1]))
-    if color is not None:
+    if k:
+        img = pygame.transform.scale(img, (img.get_width() * k, img.get_height() * k))
+    if size:
+        w, h = (min(img.get_width(), size[0]), min(img.get_height(), size[1])) if can_be_less_size else size
+        img = pygame.transform.scale(img, (w, h))
+    if color:
         fill(img, color)
     return img
 
+
 def main():
     pygame.init()
+    pygame.display.set_caption('Conway\'s game of life')
     monitor = get_monitors()[0]
     width, height = monitor.width, monitor.height
     screen = pygame.display.set_mode((width, height), pygame.FULLSCREEN)
@@ -43,74 +44,10 @@ def main():
     CellStorage.x = CellStorage.x2 = (width - CellStorage.size) // 2
     CellStorage.y = CellStorage.y2 = (height - CellStorage.size) // 2
 
-    # Path configurations
-    resource_path = Global.resource_path
-    gallery_path = Global.gallery_path
-
     # Game state initialization
     Global.t, Global.dt = time(), 1 / 4
     Global.fake_cells = {}
     Global.hidden_mode = 0
-
-    def screen_quit_1():
-        nonlocal left_click_moving_time, right_click_moving
-        left_click_moving_time, right_click_moving, CellStorage.erase_mode = 0.0, False, False
-        for _btn in buttons1:
-            _btn.hidden = False
-
-    def screen_quit_2():
-        CellStorage.upd_figures()
-        s2_inv.set_color('black')
-        screen_quit_1()
-
-    def hide_buttons():
-        if Global.hidden_mode == 0:
-            for _btn in buttons1:
-                _btn.hidden = False
-        elif Global.hidden_mode == 1:
-            play_box.hidden = True
-        elif Global.hidden_mode == 2:
-            for _btn in buttons1:
-                _btn.hidden = True
-
-    def to_screen(sc):
-        nonlocal running_screen
-        if sc == 1:
-            CellStorage.update_grid()
-        elif sc == 2:
-            CellStorage.update_grid(s2=True)
-
-        if running_screen == sc:
-            if sc == 2:
-                screen_quit_2()
-            CellStorage.update_grid()
-            running_screen = 1
-            CellStorage.enter_s1()
-            return
-        elif running_screen == 1:
-            screen_quit_1()
-        elif running_screen == 2:
-            screen_quit_2()
-        running_screen = sc
-
-        if sc == 1:
-            CellStorage.enter_s1()
-        elif sc == 2:
-            CellStorage.enter_s2()
-
-    pygame.display.set_caption('Conway\'s game of life')
-    running = True
-    left_click_moving_time, right_click_moving = 0.0, False
-
-    running_screen = 0
-    to_screen(1)
-    fake_drawing = False
-    colors = list(CellStorage.colors.keys())
-    keyboard = dict([(key, KeyboardKey()) for key in KeyboardKey.all_keys()])
-    print_info = False
-
-    t_extra, dt_extra = time(), 1 / 2
-    slow_mode = False
 
     __len__icon__ = min(50 * width // 1920, 50 * height // 1080)
     __size__icon__ = (__len__icon__, __len__icon__)
@@ -119,7 +56,7 @@ def main():
     # UI Elements
     def create_button(img_name, size=__size__icon__):
         return Button(get_img(
-            get_building_path(f'{resource_path}/{img_name}'),
+            get_building_path(f'{Global.RESOURCES_PATH}/{img_name}'),
             size=size
         ))
 
@@ -130,7 +67,7 @@ def main():
     play_box = create_button('play.png')
     slow_switch = create_button('turtle.png')
     save = SaveBox('__parameters__', get_img(
-        get_building_path(f'{resource_path}/save.png'),
+        get_building_path(f'{Global.RESOURCES_PATH}/save.png'),
         size=__size__icon__
     ))
 
@@ -156,358 +93,66 @@ def main():
     to_s1_text = Text(font.render('Return to the field', True, "black"))
     to_s1_text.upd_pos((width - to_s1_text.width()) // 2 - 10, height - 2 * to_s1_text.height())
 
-    buttons1 = [s2_inv, eraser, info, save, play_box, slow_switch]
-    buttons2 = [s2_left, s2_right, s2_inv, eraser, info, save]
-
-    s2_left.set_action(CellStorage.set_prev_figure)
-    s2_right.set_action(CellStorage.set_next_figure)
-    s2_inv.set_action(lambda: to_screen(2))
-    save.set_action(save.launch)
-
-    def __upd_pause():
-        CellStorage.pause = not CellStorage.pause
-
-    def __upd_erase_mode():
-        CellStorage.erase_mode = not CellStorage.erase_mode
-
-    def __upd_slow_mode():
-        nonlocal slow_mode
-        slow_mode = not slow_mode
-
-    def __upd_print_info():
-        nonlocal print_info
-        print_info = not print_info
-
-    info.set_action(__upd_print_info)
-    eraser.set_action(__upd_erase_mode)
-    play_box.set_action(__upd_pause)
-    slow_switch.set_action(__upd_slow_mode)
-
-    slow_switch.set_color('red')
-
-    for root, dirs, files in os.walk(gallery_path):
+    for root, dirs, files in os.walk(Global.GALLERY_PATH):
         for file in files:
             if file.endswith('.png'):
                 CellStorage.add_art_by_png(get_img(
-                    os.path.join(root,file),
+                    os.path.join(root, file),
                     size=list(map(lambda _: 2 * _, __size__icon__)),
                     can_be_less_size=True
                 ))
 
     CellStorage.game_pause = CellStorage.pause
 
-    CellStorage.upd_figures()
-    CellStorage.upd_arts()
+    CellStorage.update_figures()
+    CellStorage.update_arts()
     CellStorage.update_grid()
 
     surf = pygame.Surface((3 * width // 10, 3 * height))
-    surf.fill((255, 255, 255))
-    blit_text(surf, Global.info_text, (0, 0), pygame.font.SysFont('Courier New', 22))
-    shift_info_text_y = 0
+    surf.fill(CellStorage.colors["white"])
+    blit_text(surf, Global.INFO_TEXT, (0, 0), pygame.font.SysFont('Courier New', 22))
 
     info_rect = Rect((0, 0, surf.get_width(), height))
 
-    def handle_screen1():
-        nonlocal running, left_click_moving_time, right_click_moving, fake_drawing, print_info, shift_info_text_y, t_extra, slow_mode
-        no_event = True
-        for event in pygame.event.get():
-            no_event = False
-            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
-                running = False
+    context = UIContext(
+        running=True,
+        running_screen=1,
+        keyboard=dict([(key, KeyboardKey()) for key in KeyboardKey.all_keys()]),
+        shift_info_text_y=0,
+        buttons1=[s2_inv, eraser, info, save, play_box, slow_switch],
+        buttons2=[s2_left, s2_right, s2_inv, eraser, info, save],
+        play_box=play_box,
+        eraser=eraser,
+        slow_switch=slow_switch,
+        info=info,
+        save=save,
+        s2_inv=s2_inv,
+        s2_left=s2_left,
+        s2_right=s2_right,
+        to_s1_text=to_s1_text,
+        surf=surf,
+        info_rect=info_rect,
+        colors=list(CellStorage.colors.keys()),
+        font=font
+    )
 
-            update_key(event, keyboard)
+    # Actions depend on context, so initializing after context
+    s2_left.set_action(CellStorage.set_prev_figure)
+    s2_right.set_action(CellStorage.set_next_figure)
+    s2_inv.set_action(lambda: to_screen(2, context))
+    save.set_action(save.launch)
+    info.set_action(lambda: setattr(context, 'print_info', not context.print_info))
+    eraser.set_action(lambda: setattr(CellStorage, 'erase_mode', not CellStorage.erase_mode))
+    play_box.set_action(lambda: setattr(CellStorage, 'pause', not CellStorage.pause))
+    slow_switch.set_action(lambda: setattr(context, 'slow_mode', not context.slow_mode))
 
-            if event.type == pygame.KEYDOWN:
-                key = get_keyboard_key(event)
-                if key in list('12345'):
-                    CellStorage.set_color(colors[int(key) - 1])
-                    fake_drawing = False
-                elif key == '0':
-                    CellStorage.set_color('fake')
-                    fake_drawing = True
-                elif key == 'w':
-                    slow_mode = not slow_mode
-                elif key == 'r':
-                    CellStorage.rotate()
-                elif key == 't':
-                    CellStorage.update_transparency_mode()
-                elif key == 'i':
-                    s2_inv.action(as_btn=False)
-                elif key == 'h':
-                    Global.hidden_mode = (Global.hidden_mode + 1) % 3
-                elif key == 'esc':
-                    running = False
-                elif key == 'F1':
-                    info.action(as_btn=False)
-                elif key == 'e':
-                    eraser.action(as_btn=False)
-                elif key == 'p':
-                    CellStorage.update_draw_mode()
-                elif key == 'g':
-                    CellStorage.grid_mode = not CellStorage.grid_mode
-                elif key == 'space':
-                    play_box.action(as_btn=False)
-                elif key == 'left':
-                    Global.dt = min(2 * Global.dt, 4)
-                elif key == 'right':
-                    Global.dt = max(Global.dt / 2, 1 / 2 ** 7)
-                elif key == 'v':
-                    CellStorage.left_frame()
-                    keyboard['v'].game_pause = keyboard['b'].game_pause if keyboard[
-                        'b'].is_pressed else CellStorage.pause
-                elif key == 'b':
-                    CellStorage.right_frame()
-                    keyboard['b'].game_pause = keyboard['v'].game_pause if keyboard[
-                        'v'].is_pressed else CellStorage.pause
+    slow_switch.set_color('red')
 
-            if keyboard['ctrl'].is_pressed:
-                if keyboard['k'].is_pressed:
-                    Global.fake_cells.clear()
-                if keyboard['s'].is_pressed:
-                    save.launch()
-                if keyboard['z'].is_pressed:
-                    save.upd_by_file(full=False)
-            elif keyboard['k'].is_pressed:
-                CellStorage.clear()
-
-            if event.type == pygame.KEYUP and event.key == pygame.K_v:
-                CellStorage.pause = keyboard['v'].game_pause
-            if event.type == pygame.KEYUP and event.key == pygame.K_b:
-                CellStorage.pause = keyboard['b'].game_pause
-
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_UP:
-                CellStorage.set_next_figure()
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
-                CellStorage.set_prev_figure()
-
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 4:
-                x, y = event.pos
-                if print_info and info_rect.collide_point(x, y):
-                    shift_info_text_y += 10
-                else:
-                    CellStorage.resize(2)
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 5:
-                x, y = event.pos
-                if print_info and info_rect.collide_point(x, y):
-                    shift_info_text_y -= 10
-                else:
-                    CellStorage.resize(1 / 2)
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 2:
-                CellStorage.update_draw_mode()
-
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                x, y = event.pos
-                __break = False
-                for btn in buttons1:
-                    if btn.collide_point(x, y):
-                        btn.active = True
-                        __break = True
-                i, j = CellStorage.get_ij(x, y)
-                if __break:
-                    pass
-                elif fake_drawing:
-                    if CellStorage.erase_mode:
-                        CellStorage.fake_del_by_figure(i, j, Global.fake_cells)
-                    elif CellStorage.draw_mode == CellStorage.point_mode:
-                        CellStorage.fake_create_with_del(i, j, Global.fake_cells)
-                    else:
-                        CellStorage.fake_create(i, j, Global.fake_cells)
-                elif CellStorage.erase_mode:
-                    CellStorage.del_by_figure(i, j)
-                elif CellStorage.draw_mode == CellStorage.point_mode:
-                    CellStorage.create_with_del(i, j)
-                else:
-                    CellStorage.create(i, j)
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                left_click_moving_time = time()
-            if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-                left_click_moving_time = 0.0
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
-                right_click_moving = True
-            if event.type == pygame.MOUSEBUTTONUP and event.button == 3:
-                right_click_moving = False
-
-            if event.type == pygame.MOUSEMOTION:
-                if left_click_moving_time > 0 and time() - left_click_moving_time >= 0.1:
-                    i, j = CellStorage.mouse_cell_coord()
-                    if not fake_drawing:
-                        if CellStorage.erase_mode:
-                            CellStorage.del_by_figure(i, j)
-                        else:
-                            CellStorage.create(i, j)
-                    else:
-                        if not CellStorage.erase_mode:
-                            CellStorage.fake_create(i, j, Global.fake_cells)
-                        else:
-                            CellStorage.fake_del_by_figure(i, j, Global.fake_cells)
-                if right_click_moving:
-                    CellStorage.x += event.rel[0]
-                    CellStorage.y += event.rel[1]
-
-        for btn in buttons1:
-            btn.action()
-
-        hide_buttons()
-
-        if time() - Global.t >= Global.dt:
-            if keyboard['v'].is_holding():
-                CellStorage.left_frame()
-                CellStorage.pause = True
-                no_event = False
-
-            if keyboard['b'].is_holding():
-                CellStorage.right_frame()
-                CellStorage.pause = True
-                no_event = False
-
-            if not CellStorage.pause:
-                CellStorage.new_stage()
-
-            Global.t = time()
-
-        if slow_mode or time() - t_extra >= Global.dt:
-            if slow_mode or (no_event and CellStorage.pause):
-                CellStorage.extra_stage()
-            else:
-                t_extra = time()
-
-        for cell in Global.fake_cells.keys():
-            CellStorage.s_draw(cell[0], cell[1], CellStorage.colors["fake"])
-
-        for cell in CellStorage.values():
-            cell.draw()
-
-        i, j = CellStorage.mouse_cell_coord()
-        CellStorage.draw_pale(i, j)
-
-        if CellStorage.grid_mode:
-            CellStorage.draw_grid()
-
-        if print_info:
-            CellStorage.screen.blit(surf,
-                                    (play_box.pos()[0], play_box.pos()[1] + play_box.height()),
-                                    (0, shift_info_text_y, surf.get_width(), surf.get_height()))
-
-        save.dis_light()
-        eraser.set_color("red") if CellStorage.erase_mode else eraser.set_color("black")
-        play_box.set_color("black") if CellStorage.pause else play_box.set_color("red")
-        info.set_color("red") if print_info else info.set_color("black")
-        slow_switch.hidden = False if slow_mode else True
-        for btn in buttons1:
-            btn.blit()
-        if Global.hidden_mode == 0:
-            blit_text(screen,
-                      f' {int(1 / Global.dt) if 1 / Global.dt == int(1 / Global.dt) else 1 / Global.dt} FPS',
-                      (play_box.pos()[0] + play_box.width(), play_box.pos()[1] + play_box.height() // 4),
-                      pygame.font.SysFont('Courier New', 20))
-
-        pygame.display.update()
-
-    def handle_screen2():
-        nonlocal running, left_click_moving_time, shift_info_text_y, print_info, fake_drawing
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-
-            update_key(event, keyboard)
-
-            if event.type == pygame.KEYDOWN:
-                key = get_keyboard_key(event)
-                if key in list('12345'):
-                    CellStorage.set_color(colors[int(key) - 1])
-                    fake_drawing = False
-                elif key == 'g':
-                    CellStorage.grid_mode = not CellStorage.grid_mode
-                elif key == '0':
-                    CellStorage.set_color('fake')
-                    fake_drawing = True
-                elif key == 'h':
-                    Global.hidden_mode = (Global.hidden_mode + 1) % 3
-                elif key == 'r':
-                    CellStorage.rotate()
-                elif key == 'i' or key == 'esc':
-                    s2_inv.action(as_btn=False)
-                elif key == 'F1':
-                    info.action(as_btn=False)
-                elif key == 'e':
-                    eraser.action(as_btn=False)
-                elif key == 's' and keyboard['ctrl'].is_pressed:
-                    save.action(as_btn=False)
-                elif key == 'k':
-                    CellStorage.patterns[CellStorage.pattern_index].clear()
-                elif key == 'left':
-                    CellStorage.set_prev_figure(s2=True)
-                elif key == 'right':
-                    CellStorage.set_next_figure(empty_allow=True, s2=True)
-
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                x, y = event.pos[0], event.pos[1]
-                if s2_left.collide_point(x, y):
-                    CellStorage.set_prev_figure(s2=True)
-                elif s2_right.collide_point(x, y):
-                    CellStorage.set_next_figure(empty_allow=True, s2=True)
-                elif to_s1_text.collide_point(x, y) or s2_inv.collide_point(x, y):
-                    s2_inv.active = True
-                elif eraser.collide_point(x, y):
-                    eraser.active = True
-                elif info.collide_point(x, y):
-                    info.active = True
-                elif save.collide_point(x, y):
-                    save.launch()
-                else:
-                    i, j = CellStorage.get_ij(x, y, s2=True)
-                    CellStorage.upd_point(i, j, s2=True)
-
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                left_click_moving_time = time()
-            if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-                left_click_moving_time = 0.0
-
-            if event.type == pygame.MOUSEMOTION:
-                if left_click_moving_time > 0 and time() - left_click_moving_time >= 0.1:
-                    CellStorage.upd_point_by_motion(s2=True)
-
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 4:
-                x, y = event.pos
-                if print_info and info_rect.collide_point(x, y):
-                    shift_info_text_y += 10
-                else:
-                    CellStorage.resize(2, s2=True)
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 5:
-                x, y = event.pos
-                if print_info and info_rect.collide_point(x, y):
-                    shift_info_text_y -= 10
-                else:
-                    CellStorage.resize(1 / 2, s2=True)
-
-        for btn in buttons2:
-            btn.action()
-
-        CellStorage.s_draw(0, 0, CellStorage.colors["gray"], s2=True)
-        CellStorage.draw_figure(s2=True)
-        to_s1_text.blit()
-        s2_inv.set_color("red")
-        eraser.set_color("red") if CellStorage.erase_mode else eraser.set_color("black")
-        info.set_color("red") if print_info else info.set_color("black")
-        save.dis_light()
-        for btn in buttons2:
-            btn.blit()
-        if CellStorage.grid_mode:
-            CellStorage.draw_grid(s2=True)
-        if print_info:
-            CellStorage.screen.blit(surf,
-                                    (play_box.pos()[0], play_box.pos()[1] + play_box.height()),
-                                    (0, shift_info_text_y, surf.get_width(), surf.get_height()))
-        pygame.display.flip()
-
-    while running:
-        screen.fill(CellStorage.colors["white"])
-        if running_screen == 1:
-            handle_screen1()
-        elif running_screen == 2:
-            handle_screen2()
+    while context.running:
+        update_screen(context)
 
     pygame.quit()
+
 
 if __name__ == '__main__':
     main()
