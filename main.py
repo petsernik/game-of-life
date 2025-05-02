@@ -1,22 +1,18 @@
 import pygame
 import os
-import sys
+
+from get_building_path import get_building_path
+
 from screeninfo import get_monitors
 from time import time
 
-from globals import Global, UIContext
+from globals import Global
 from lib.screens import update_screen, to_screen
 
 from lib.cell import CellStorage
+from lib.context import UIContext
 from lib.keyboard import KeyboardKey
 from lib.rect import fill, Button, Text, blit_text, Rect, SaveBox
-
-
-def get_building_path(relative):
-    if hasattr(sys, '_MEIPASS'):
-        return os.path.join(sys._MEIPASS, relative)
-    else:
-        return os.path.join(os.path.abspath("."), relative)
 
 
 def get_img(str_path, k=None, size=None, color=None, can_be_less_size=False):
@@ -50,7 +46,7 @@ def main():
     Global.hidden_mode = 0
     Global.use_music = False
     Global.t_music, Global.dt_music = Global.t, 1 / 2
-    Global.t_ui, Global.dt_ui = Global.t, 1/128
+    Global.t_ui, Global.dt_ui = Global.t, 1 / 128
 
     __len__icon__ = min(50 * width // 1920, 50 * height // 1080)
     __size__icon__ = (__len__icon__, __len__icon__)
@@ -68,6 +64,7 @@ def main():
     eraser = create_button('eraser.png')
     info = create_button('info.png', size=__size__icon__)
     play_box = create_button('play.png')
+    music_switch = create_button('music.png')
     slow_switch = create_button('turtle.png')
     save = SaveBox('__parameters__', get_img(
         get_building_path(f'{Global.RESOURCES_PATH}/save.png'),
@@ -77,11 +74,16 @@ def main():
     # Position elements
     right_height = 12
     right_x = width - 10
-    play_box.upd_pos(10, right_height)
-    slow_switch.upd_pos(10, play_box.pos()[1] + play_box.height())
+    left_x = 10
+    cur_h = right_height
+    for btn in [play_box, music_switch, slow_switch]:
+        btn.upd_pos(left_x, cur_h)
+        cur_h += btn.height() + 5
+
+    cur_x = right_x
     for btn in [s2_inv, eraser, info]:
-        right_x -= btn.width() + 5
-        btn.upd_pos(right_x, right_height)
+        cur_x -= btn.width() + 5
+        btn.upd_pos(cur_x, right_height)
     save.upd_rect(info.pos()[0] - info.width() - 5, right_height, info.width(), info.height())
     save.upd_by_file()
 
@@ -122,10 +124,11 @@ def main():
         running_screen=1,
         keyboard=dict([(key, KeyboardKey()) for key in KeyboardKey.all_keys()]),
         shift_info_text_y=0,
-        buttons1=[s2_inv, eraser, info, save, play_box, slow_switch],
+        buttons1=[s2_inv, eraser, info, save, play_box, music_switch, slow_switch],
         buttons2=[s2_left, s2_right, s2_inv, eraser, info, save],
         play_box=play_box,
         eraser=eraser,
+        music_switch=music_switch,
         slow_switch=slow_switch,
         info=info,
         save=save,
@@ -148,6 +151,7 @@ def main():
     eraser.set_action(lambda: setattr(CellStorage, 'erase_mode', not CellStorage.erase_mode))
     play_box.set_action(lambda: setattr(CellStorage, 'pause', not CellStorage.pause))
     slow_switch.set_action(lambda: setattr(context, 'slow_mode', not context.slow_mode))
+    music_switch.set_action(lambda: setattr(Global, 'use_music', not Global.use_music))
 
     slow_switch.set_color('red')
 

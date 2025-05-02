@@ -1,9 +1,12 @@
 import pygame
 from time import time
-from lib.keyboard import update_key, get_keyboard_key
-from lib.rect import blit_text
-from globals import Global, UIContext
+
 from lib.cell import CellStorage
+from lib.context import UIContext
+from lib.keyboard import update_key, get_keyboard_key
+from lib.music import stop_music
+from lib.rect import blit_text
+from globals import Global
 
 
 def update_screen(context: UIContext) -> None:
@@ -58,8 +61,10 @@ def update_screen1(context: UIContext):
                 context.play_box.action(as_btn=False)
             elif key == 'left':
                 Global.dt = min(2 * Global.dt, 4)
+                Global.dt_music = max(2 * Global.dt, 1 / 2 ** 3)
             elif key == 'right':
                 Global.dt = max(Global.dt / 2, 1 / 2 ** 7)
+                Global.dt_music = max(2 * Global.dt, 1 / 2 ** 3)
             elif key == '6':
                 CellStorage.decrease_default_transparency()
             elif key == '7':
@@ -74,6 +79,8 @@ def update_screen1(context: UIContext):
                     'v'].is_pressed else CellStorage.pause
             elif key == 'm':
                 Global.use_music = not Global.use_music
+                if not Global.use_music:
+                    stop_music()
 
         if context.keyboard['ctrl'].is_pressed:
             if context.keyboard['k'].is_pressed:
@@ -190,7 +197,6 @@ def update_screen1(context: UIContext):
             CellStorage.increase_default_transparency()
         Global.t_ui = time()
 
-
     if time() - Global.t_music >= Global.dt_music and Global.use_music:
         if not CellStorage.pause:
             CellStorage.play_music(Global.dt_music * 2)
@@ -220,6 +226,7 @@ def update_screen1(context: UIContext):
     context.eraser.set_color("red" if CellStorage.erase_mode else "black")
     context.play_box.set_color("black" if CellStorage.pause else "red")
     context.info.set_color("red" if context.print_info else "black")
+    context.music_switch.set_color("red" if Global.use_music else "black")
     context.slow_switch.hidden = not context.slow_mode
 
     for b in context.buttons1:

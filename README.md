@@ -120,6 +120,8 @@ deactivate
 
 Many thanks to:
 
+* [Pygame community](https://www.pygame.org/) for making it so enjoyable and easy to create and run games 
+in Python.
 * [Purepng](https://purepng.com/) and [iconduck](https://iconduck.com/licenses/cc0) for
   [CC0-licensed](https://creativecommons.org/publicdomain/zero/1.0/) PNGs.
 * [Phosphor Icons](https://phosphoricons.com/) for [MIT-licensed](https://opensource.org/license/mit/) icons

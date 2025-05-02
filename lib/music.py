@@ -70,6 +70,16 @@ def normalize_volumes():
             ch.set_volume(vol)
 
 
+def stop_music():
+    # find truly busy channels
+    busy = [pygame.mixer.Channel(i)
+            for i in range(pygame.mixer.get_num_channels())
+            if pygame.mixer.Channel(i).get_busy()]
+    for ch in busy:
+        ch.set_volume(0)
+
+
+
 def play_note(tonality_index, x, y, note_dur=1.0, pause=0.0, sequentially=False):
     midi = TONALITIES[tonality_index] + ALL_STEPS[2 * y + x]
     snd = get_sound(midi, note_dur)

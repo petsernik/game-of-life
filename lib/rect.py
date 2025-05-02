@@ -90,8 +90,9 @@ class SaveBox(Button):
             f.write(str(list(CellStorage.patterns)) + '\n')
             f.write(f'{Global.dt}\n')
             f.write(str(list(Global.fake_cells.keys())) + '\n')
-            f.write(f'{CellStorage.color_name}\n')
+            f.write(f'{CellStorage.color}\n')
             f.write(f'{Global.hidden_mode}\n')
+            f.write(f'{Global.use_music}\n')
             # f.write(f'{CellStorage.frames()}\n')
         f.close()
 
@@ -110,25 +111,22 @@ class SaveBox(Button):
                     CellStorage.clear()
                     for _i in range(len(cords)):
                         Cell(cords[_i][0], cords[_i][1], prepare_color(_colors[_i]))
-                    _x, _y, z = int(f.readline()), ast.literal_eval(f.readline()), float(f.readline())
                     if full:
+                        _x, _y, _z = int(f.readline()), ast.literal_eval(f.readline()), float(f.readline())
                         CellStorage.set_figure_i(_x)
                         CellStorage.update_figures(_y)
-                        Global.dt = z
-                    line = f.readline()
-                    if full:
+                        Global.dt = _z
+                        Global.dt_music = max(2 * _z, 1 / 2 ** 3)
                         Global.fake_cells.clear()
-                        for _cell in ast.literal_eval(line):
+                        for _cell in ast.literal_eval(f.readline()):
                             Global.fake_cells[_cell] = 1
-                    color = f.readline().split()[0]
-                    if full:
+                        color = ast.literal_eval(f.readline())
                         CellStorage.set_color(color)
-                    line = f.readline()
-                    if full:
-                        Global.hidden_mode = int(line)
+                        Global.hidden_mode = int(f.readline())
+                        Global.use_music = bool(f.readline())
                     # CellStorage.read_frames(f.read line())
             except Exception as exc:
-                print(exc)
+                print("Error when reading save-file: ", exc)
             finally:
                 f.close()
 
@@ -187,17 +185,17 @@ def blit_text(
     # Cache for rendered words
     word_cache = {}
 
-    def get_word_surface(word):
+    def get_word_surface(_word):
         """Get cached or newly rendered word surface"""
-        if word not in word_cache:
-            word_cache[word] = font.render(word, True, color)
-        return word_cache[word]
+        if _word not in word_cache:
+            word_cache[_word] = font.render(_word, True, color)
+        return word_cache[_word]
 
-    def process_word(word):
+    def process_word(_word):
         """Process a single word, handling wrapping and rendering."""
         nonlocal current_x, current_y, line_height, get_word_surface
         nonlocal surface_bottom
-        word_surface = get_word_surface(word)
+        word_surface = get_word_surface(_word)
         word_width, word_height = word_surface.get_size()
 
         # Update line height

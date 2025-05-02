@@ -100,6 +100,13 @@ class CellStorage:
             (-1, -1, None), (1, -1, None)
         ],
         [(i, j, None) for i in range(-1, 2) for j in range(-1, 2)],
+        [(2, 1, None), (3, 1, None), (4, 1, None), (1, 2, None), (1, 3, None), (1, 4, None), (2, 6, None), (3, 6, None),
+         (4, 6, None), (6, 4, None), (6, 3, None), (6, 2, None), (1, -2, None), (1, -3, None), (1, -4, None),
+         (2, -1, None), (3, -1, None), (4, -1, None), (2, -6, None), (3, -6, None), (4, -6, None), (6, -2, None),
+         (6, -3, None), (6, -4, None), (-1, -2, None), (-1, -4, None), (-1, -3, None), (-2, -1, None), (-3, -1, None),
+         (-4, -1, None), (-2, 1, None), (-3, 1, None), (-4, 1, None), (-1, 2, None), (-1, 3, None), (-1, 4, None),
+         (-2, 6, None), (-3, 6, None), (-4, 6, None), (-2, -6, None), (-3, -6, None), (-4, -6, None), (-6, -2, None),
+         (-6, -3, None), (-6, -4, None), (-6, 4, None), (-6, 3, None), (-6, 2, None)],
         []
     ]
     art_index = 0
@@ -184,12 +191,12 @@ class CellStorage:
 
     @staticmethod
     def increase_default_transparency():
-        CellStorage.transparency = min(CellStorage.transparency+10, 255)
+        CellStorage.transparency = min(CellStorage.transparency + 10, 255)
         CellStorage.color = color_set_alpha(CellStorage.color, CellStorage.transparency)
 
     @staticmethod
     def decrease_default_transparency():
-        CellStorage.transparency = max(CellStorage.transparency-10, 0)
+        CellStorage.transparency = max(CellStorage.transparency - 10, 0)
         CellStorage.color = color_set_alpha(CellStorage.color, CellStorage.transparency)
 
     @staticmethod
@@ -244,7 +251,8 @@ class CellStorage:
                 CellStorage.color = CellStorage.colors[color]
             else:
                 CellStorage.color = color_set_alpha(CellStorage.colors[color], CellStorage.transparency)
-
+        if isinstance(color, tuple):
+            CellStorage.color = color
 
     @staticmethod
     def set_figure_i(i):
@@ -353,9 +361,8 @@ class CellStorage:
                 if rightmost[alpha][r] is None or c > rightmost[alpha][r]:
                     rightmost[alpha][r] = c
 
-
         for alpha in range(256):
-            p_dur = 2 - alpha/255
+            p_dur = 2 - alpha / 255
             # play a note for each row where we found at least one cell
             for r, c in enumerate(rightmost[alpha]):
                 if c is not None:
@@ -533,6 +540,10 @@ class CellStorage:
             CellStorage.patterns.append([])
             CellStorage.pattern_index = CellStorage.patterns.index(figure)
         else:
+            for i in range(len(new_figures)):
+                for j in range(len(new_figures[i])):
+                    if len(new_figures[i][j]) == 2:
+                        new_figures[i][j] = (new_figures[i][j][0], new_figures[i][j][1], None)
             CellStorage.patterns = new_figures
 
     @staticmethod
