@@ -55,6 +55,7 @@ def get_sound(midi: int, duration: float = 1.0) -> pygame.mixer.Sound:
         wave *= env
         audio = np.clip(wave * 32767, -32767, 32767).astype(np.int16)
         _sound_cache[key] = pygame.mixer.Sound(buffer=audio.tobytes())
+
     return _sound_cache[key]
 
 

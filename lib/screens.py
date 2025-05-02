@@ -60,6 +60,10 @@ def update_screen1(context: UIContext):
                 Global.dt = min(2 * Global.dt, 4)
             elif key == 'right':
                 Global.dt = max(Global.dt / 2, 1 / 2 ** 7)
+            elif key == '6':
+                CellStorage.decrease_default_transparency()
+            elif key == '7':
+                CellStorage.increase_default_transparency()
             elif key == 'v':
                 CellStorage.left_frame()
                 context.keyboard['v'].game_pause = context.keyboard['b'].game_pause if context.keyboard[
@@ -178,6 +182,14 @@ def update_screen1(context: UIContext):
         if not CellStorage.pause:
             CellStorage.new_stage()
         Global.t = time()
+
+    if time() - Global.t_ui >= Global.dt_ui:
+        if context.keyboard['6'].is_holding():
+            CellStorage.decrease_default_transparency()
+        if context.keyboard['7'].is_holding():
+            CellStorage.increase_default_transparency()
+        Global.t_ui = time()
+
 
     if time() - Global.t_music >= Global.dt_music and Global.use_music:
         if not CellStorage.pause:

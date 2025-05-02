@@ -17,6 +17,7 @@ Key e or button in the top-right corner - toggle eraser mode.
 Key g - toggle grid mode on/off.
 Key t - toggle transparent mode on/off.
 1, 2, 3, 4, 5, 0 - drawing colors (0 is fake: i.e. does not participate in the game).
+6, 7 - decrease/increase transparency when drawing point/pattern.
 Key k - clear the field, ctrl+k - clear fake color cells.
 Key i or the button in the top-right corner - you also have the option to create/delete patterns and select them from the inventory (the last opened pattern is used).
 Ctrl+s or the button in the top-right corner - save the field and patterns.

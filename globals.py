@@ -5,6 +5,8 @@ import os
 
 
 class Global:
+    dt_ui = None
+    t_ui = None
     use_music = False
     dt_music = 1 / 2
     RESOURCES_PATH = 'resources'
